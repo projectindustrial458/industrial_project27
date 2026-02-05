@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSRTC Digital Registry</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Auth Check (Prevent Flash) -->
+    <script>
+        const AUTH_KEY = 'ksrtc_sm_session';
+        const session = sessionStorage.getItem(AUTH_KEY);
+        if (!session) {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+
+<body class="bg-light">
+
+    <!-- Header Section -->
+    <header class="bg-white border-bottom py-2 shadow-sm sticky-top">
+        <div class="container-fluid px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Placeholder Logo -->
+                    <div class="rounded overflow-hidden" style="width: 50px; height: 35px;">
+                        <img src="https://placehold.co/100x70/e6e6e6/808080?text=KSRTC" alt="KSRTC Logo"
+                            class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <div>
+                        <h1 class="h5 mb-0 fw-bold text-dark">KSRTC Digital Registry</h1>
+                        <p class="mb-0 text-muted small fw-medium" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                            INDUSTRIAL ENGINEERING BTECH PROJECT V1.0</p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-4">
+                    <div class="text-end d-none d-md-block">
+                        <div id="current-time" class="fw-bold text-dark fs-5">--:--:--</div>
+                        <div class="text-muted small" id="depot-display">Depot: Thiruvananthapuram Central</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-light rounded-circle border-0 text-secondary position-relative">
+                            <i class="bi bi-bell-fill"></i>
+                            <span
+                                class="position-absolute top-25 start-75 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
+                        </button>
+                        <button class="btn btn-light rounded-circle border-0 text-secondary">
+                            <i class="bi bi-person-circle fs-5"></i>
+                        </button>
+                        <button id="logoutBtn" class="btn btn-outline-danger rounded-pill border-0 text-danger"
+                            title="Logout">
+                            <i class="bi bi-box-arrow-right fs-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sub-Header / Context Bar -->
+    <div class="bg-white border-bottom py-2">
+        <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-primary text-white p-1 rounded-1 d-flex align-items-center justify-content-center"
+                    style="width: 24px; height: 24px;">
+                    <i class="bi bi-bar-chart-fill small"></i>
+                </div>
+                <span class="fw-bold text-primary small">IE Project Focus: Data-Driven Logistics & Process
+                    Optimization</span>
+            </div>
+
+            <div class="d-none d-md-flex gap-3">
+                <a href="#"
+                    class="text-decoration-none small text-primary bg-primary-subtle px-2 py-1 rounded">Throughput
+                    Analysis</a>
+                <a href="#" class="text-decoration-none small text-primary bg-primary-subtle px-2 py-1 rounded">EPKM
+                    Optimization</a>
+                <a href="#" class="text-decoration-none small text-primary bg-primary-subtle px-2 py-1 rounded">Queueing
+                    Model Implementation</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white border-bottom">
+        <div class="container-fluid px-4">
+            <ul class="nav nav-tabs border-bottom-0 gap-3" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active py-3 border-0 bg-transparent fw-medium position-relative"
+                        id="live-terminal-tab" data-bs-toggle="tab" data-bs-target="#live-terminal" type="button"
+                        role="tab" aria-selected="true">
+                        Live Terminal
+                        <div class="active-indicator"></div>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
+                        id="digital-registry-tab" data-bs-toggle="tab" data-bs-target="#digital-registry" type="button"
+                        role="tab" aria-selected="false">
+                        Digital Registry (Waybill)
+                        <div class="active-indicator"></div>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
+                        id="efficiency-analytics-tab" data-bs-toggle="tab" data-bs-target="#efficiency-analytics"
+                        type="button" role="tab" aria-selected="false">
+                        Efficiency Analytics
+                        <div class="active-indicator"></div>
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
+                        id="search-records-tab" data-bs-toggle="tab" data-bs-target="#search-records" type="button"
+                        role="tab" aria-selected="false">
+                        Search Records
+                        <div class="active-indicator"></div>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
+                        id="daily-log-tab" data-bs-toggle="tab" data-bs-target="#daily-log" type="button" role="tab"
+                        aria-selected="false">
+                        Daily Master Log
+                        <div class="active-indicator"></div>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="container-fluid px-4 py-4">
+        <div class="tab-content" id="myTabContent">
+
+            <!-- Tab Pane: Live Terminal -->
+            <div class="tab-pane fade show active" id="live-terminal" role="tabpanel" tabindex="0">
+                <!-- Stats Row -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <div class="card h-100 p-4 border-0 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-secondary fw-bold small text-uppercase letter-spacing-1">Active Fleet
+                                    Status</h6>
+                                <i class="bi bi-bus-front text-success fs-4"></i>
+                            </div>
+                            <div class="d-flex align-items-end gap-3 mt-3">
+                                <h2 class="display-4 fw-bold text-dark mb-0">42</h2>
+                                <span
+                                    class="badge bg-success-subtle text-success mb-2 px-3 py-2 rounded-pill fw-medium">+3
+                                    Arriving Soon</span>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">Buses Currently In Depot</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card h-100 p-4 border-0 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-secondary fw-bold small text-uppercase letter-spacing-1">Punctuality
+                                    Score</h6>
+                                <i class="bi bi-stopwatch text-warning fs-4"></i>
+                            </div>
+                            <div class="mt-3">
+                                <h2 class="display-4 fw-bold text-dark mb-0">88.4%</h2>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">Average Departure Delay: 4 min</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card h-100 p-4 border-0 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-secondary fw-bold small text-uppercase letter-spacing-1">Utilization
+                                    Index</h6>
+                                <i class="bi bi-graph-up-arrow text-primary fs-4"></i>
+                            </div>
+                            <div class="mt-3">
+                                <h2 class="display-4 fw-bold text-dark mb-0">76%</h2>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">Occupancy Ratio (IE Metric)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Status Section -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-broadcast fs-5 text-dark"></i>
+                        <h5 class="fw-bold mb-0 text-dark">Platform Status (Bay Management)</h5>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <span class="d-flex align-items-center gap-2 text-secondary small">
+                            <span class="d-inline-block rounded-circle bg-success"
+                                style="width: 10px; height: 10px;"></span> Occupied
+                        </span>
+                        <span class="d-flex align-items-center gap-2 text-secondary small">
+                            <span class="d-inline-block rounded-circle bg-secondary"
+                                style="width: 10px; height: 10px;"></span> Empty
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-5">
+                    <!-- P-1 Occupied -->
+                    <div class="col-md-4">
+                        <div class="card border-success border-top-4 shadow-sm p-4 h-100 position-relative">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="fw-bold text-secondary">P-1</span>
+                                <span class="text-success fw-bold small">OCCUPIED</span>
+                            </div>
+                            <div class="text-center my-3">
+                                <!-- Simulated Bus Graphic -->
+                                <div class="bg-light rounded p-3 d-inline-block position-relative">
+                                    <i class="bi bi-bus-front-fill fs-1 text-danger"></i>
+                                    <div
+                                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
+                                        KL-15</div>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mt-2 mb-1">Trivandrum - Kozhikode</h6>
+                            <p class="text-muted small mb-0">Dept: 14:45</p>
+                        </div>
+                    </div>
+
+                    <!-- P-2 Occupied -->
+                    <div class="col-md-4">
+                        <div class="card border-success border-top-4 shadow-sm p-4 h-100 position-relative">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="fw-bold text-secondary">P-2</span>
+                                <span class="text-success fw-bold small">OCCUPIED</span>
+                            </div>
+                            <div class="text-center my-3">
+                                <div class="bg-light rounded p-3 d-inline-block position-relative">
+                                    <i class="bi bi-bus-front-fill fs-1 text-danger"></i>
+                                    <div
+                                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
+                                        KL-15</div>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mt-2 mb-1">Local Circular</h6>
+                            <p class="text-muted small mb-0">Dept: 14:50</p>
+                        </div>
+                    </div>
+
+                    <!-- P-3 Empty -->
+                    <div class="col-md-4">
+                        <div class="card border-light shadow-sm p-4 h-100 bg-light opacity-75">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="fw-bold text-secondary">P-3</span>
+                                <span class="text-secondary small">EMPTY</span>
+                            </div>
+                            <div class="text-center my-3 py-4">
+                                <i class="bi bi-slash-circle fs-1 text-black-50 opacity-25"></i>
+                            </div>
+                            <h6 class="fw-bold mt-2 mb-1 text-muted">Available</h6>
+                            <p class="text-muted small mb-0">--:--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sequence Tracker -->
+                <div class="card border-0 shadow-sm">
+                    <div
+                        class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h6 class="fw-bold mb-0">Digital Sequence Tracker (Arrival/Departure Feed)</h6>
+                        <div class="input-group input-group-sm" style="max-width: 300px;">
+                            <span class="input-group-text bg-light border-end-0"><i
+                                    class="bi bi-search text-secondary"></i></span>
+                            <input type="text" class="form-control bg-light border-start-0" id="liveTrackerSearchInput"
+                                placeholder="Search Bus No (e.g. KL-15)...">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="liveTrackerTable">
+                            <thead class="bg-light text-secondary text-uppercase small">
+                                <tr>
+                                    <th class="ps-4">Bus Number</th>
+                                    <th>Service Type</th>
+                                    <th>From/To</th>
+                                    <th>Sch. Arr</th>
+                                    <th>Act. Arr</th>
+                                    <th>Sch. Dep</th>
+                                    <th>Act. Dep</th>
+                                    <th>Deviation (IE Delta)</th>
+                                    <th>Current Depo</th>
+                                    <th class="pe-4 text-end">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fw-medium">
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-1102</td>
+                                    <td><span class="badge border text-dark rounded-pill fw-normal px-3">Super
+                                            Fast</span></td>
+                                    <td>Trivandrum - Kannur</td>
+                                    <td>14:00</td>
+                                    <td>14:05</td>
+                                    <td>14:15</td>
+                                    <td>14:18</td>
+                                    <td class="text-danger fw-bold">+3m</td>
+                                    <td>Trivandrum Central</td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-secondary-subtle text-secondary rounded-1 px-3 py-2">Departed</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-5490</td>
+                                    <td><span class="badge border text-dark rounded-pill fw-normal px-3">Ordinary</span>
+                                    </td>
+                                    <td>Nedumangad Local</td>
+                                    <td>14:10</td>
+                                    <td>14:12</td>
+                                    <td>14:20</td>
+                                    <td>14:21</td>
+                                    <td class="text-danger fw-bold">+1m</td>
+                                    <td>Nedumangad</td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-secondary-subtle text-secondary rounded-1 px-3 py-2">Departed</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-0098</td>
+                                    <td><span
+                                            class="badge border border-warning text-warning-emphasis rounded-pill fw-normal px-3 bg-warning-subtle">Minnal</span>
+                                    </td>
+                                    <td>TVM - Sulthan Bathery</td>
+                                    <td>14:30</td>
+                                    <td>14:30</td>
+                                    <td>14:35</td>
+                                    <td>14:35</td>
+                                    <td class="text-success fw-bold">0m</td>
+                                    <td>Sulthan Bathery</td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-success-subtle text-success rounded-1 px-3 py-2">At
+                                            Platform</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-2121</td>
+                                    <td><span class="badge border text-dark rounded-pill fw-normal px-3">Fast
+                                            Passenger</span></td>
+                                    <td>Ernakulam Bypass</td>
+                                    <td>14:35</td>
+                                    <td>14:42</td>
+                                    <td>14:40</td>
+                                    <td>14:46</td>
+                                    <td class="text-danger fw-bold">+6m</td>
+                                    <td>Ernakulam</td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-success-subtle text-success rounded-1 px-3 py-2">Entering</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Pane: Digital Registry -->
+            <div class="tab-pane fade" id="digital-registry" role="tabpanel" tabindex="0">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-lg p-5">
+                            <div class="text-center mb-5">
+                                <h3 class="fw-bold text-dark">New Entry: Digital Waybill Log</h3>
+                                <p class="text-muted">Replacing the Station Master's manual paper record.</p>
+                            </div>
+
+                            <form>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Bus
+                                            Registration Number</label>
+                                        <input type="text" class="form-control form-control-lg bg-light border-0"
+                                            placeholder="KL-15-A-1234">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Service
+                                            Category</label>
+                                        <select class="form-select form-select-lg bg-light border-0">
+                                            <option>RTC</option>
+                                            <option>SHIFT</option>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Movement
+                                            Type</label>
+                                        <div class="d-flex gap-0 w-100 bg-light p-1 rounded-3">
+                                            <input type="radio" class="btn-check" name="movement-type" id="arrival"
+                                                autocomplete="off" checked>
+                                            <label class="btn btn-light w-50 border-0 fw-medium" for="arrival"
+                                                style="color: var(--success-color);">Arrival</label>
+
+                                            <input type="radio" class="btn-check" name="movement-type" id="departure"
+                                                autocomplete="off">
+                                            <label class="btn btn-light w-50 border-0 fw-medium"
+                                                for="departure">Departure</label>
+                                        </div>
+                                        <style>
+                                            #arrival:checked+label {
+                                                background-color: white;
+                                                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                                                border: 1px solid var(--success-color) !important;
+                                            }
+                                        </style>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Route
+                                            Details</label>
+                                        <input type="text" class="form-control form-control-lg bg-light border-0"
+                                            placeholder="Origin - Destination">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Via
+                                            Route</label>
+                                        <input type="text" class="form-control form-control-lg bg-light border-0"
+                                            placeholder="Via Points">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Scheduled
+                                            Time</label>
+                                        <input type="time" class="form-control form-control-lg bg-light border-0">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Actual
+                                            Time (Calculated)</label>
+                                        <input type="text"
+                                            class="form-control form-control-lg bg-primary-subtle border-0 text-primary fw-bold"
+                                            value="10:25 PM">
+                                    </div>
+
+                                    <!-- Crew Details Section -->
+                                    <div class="col-12 mt-4">
+                                        <h6 class="fw-bold text-dark border-bottom pb-2">Crew Details</h6>
+                                    </div>
+
+                                    <!-- Conductor Details -->
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Conductor
+                                            Name</label>
+                                        <input type="text" class="form-control bg-light border-0" placeholder="Name">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Conductor
+                                            ID</label>
+                                        <input type="text" class="form-control bg-light border-0"
+                                            placeholder="ID Number">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Conductor
+                                            Phone</label>
+                                        <input type="tel" class="form-control bg-light border-0"
+                                            placeholder="Phone Number">
+                                    </div>
+
+                                    <!-- Driver Details -->
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Driver
+                                            Name</label>
+                                        <input type="text" class="form-control bg-light border-0" placeholder="Name">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Driver
+                                            ID</label>
+                                        <input type="text" class="form-control bg-light border-0"
+                                            placeholder="ID Number">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-uppercase small fw-bold text-secondary">Driver
+                                            Phone</label>
+                                        <input type="tel" class="form-control bg-light border-0"
+                                            placeholder="Phone Number">
+                                    </div>
+
+                                    <div class="col-12 mt-4 text-end">
+                                        <button type="button" class="btn btn-secondary btn-lg px-4 me-2">Clear</button>
+                                        <button type="submit" class="btn btn-primary btn-lg px-5">Log Entry</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Pane: Efficiency Analytics -->
+            <div class="tab-pane fade" id="efficiency-analytics" role="tabpanel" tabindex="0">
+                <div class="card border-0 shadow-sm p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0 text-dark">Earnings Per KM (EPKM) Optimization Trend</h5>
+                        <span
+                            class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">TARGET:
+                            ₹45.00</span>
+                    </div>
+                    <!-- Chart Container -->
+                    <div style="height: 300px; width: 100%;">
+                        <canvas id="epkmChart"></canvas>
+                    </div>
+                    <div class="mt-3 p-3 bg-light rounded border border-light">
+                        <p class="mb-0 text-secondary small"><strong class="text-primary">IE Insight:</strong> Wednesday
+                            shows a <span class="text-danger fw-bold">32% drop</span> in EPKM. Suggesting consolidation
+                            of Ordinary services on the Kottayam route to improve load factor.</p>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm p-4">
+                    <h5 class="fw-bold mb-4 text-dark">Delay Root Cause Analysis (Bottleneck Identification)</h5>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small text-uppercase text-secondary">Traffic Congestion
+                                (External)</span>
+                            <span class="fw-bold small">45%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 45%"
+                                aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small text-uppercase text-secondary">Platform Congestion (Station
+                                Bottleneck)</span>
+                            <span class="fw-bold small">28%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 28%" aria-valuenow="28"
+                                aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small text-uppercase text-secondary">Crew Handover Delay</span>
+                            <span class="fw-bold small">15%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: 15%"
+                                aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small text-uppercase text-secondary">Mechanical Check</span>
+                            <span class="fw-bold small">12%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-secondary opacity-50" role="progressbar" style="width: 12%"
+                                aria-valuenow="12" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-uppercase small fw-bold text-secondary mb-1">Mean Waiting Time</h6>
+                            <h3 class="fw-bold text-dark">6.2m <span class="text-muted fs-6 fw-normal">avg</span></h3>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-uppercase small fw-bold text-secondary mb-1">Throughput Rate</h6>
+                            <h3 class="fw-bold text-dark">14.5 <span class="text-muted fs-6 fw-normal">buses/hr</span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Pane: Optimization Engine -->
+            <div class="tab-pane fade" id="optimization-engine" role="tabpanel" tabindex="0">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-secondary">Optimization Engine Module - Placeholder</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Pane: Search Records -->
+            <div class="tab-pane fade" id="search-records" role="tabpanel" tabindex="0">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="card border-0 shadow-sm p-4 mb-4">
+                            <h5 class="fw-bold mb-4 text-dark">Search Bus Records</h5>
+                            <form id="searchForm" class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label text-uppercase small fw-bold text-secondary">Date</label>
+                                    <input type="date" class="form-control form-control-lg bg-light border-0"
+                                        id="searchDate">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label text-uppercase small fw-bold text-secondary">Bus
+                                        Registration No.</label>
+                                    <input type="text" class="form-control form-control-lg bg-light border-0"
+                                        id="searchBusNo" placeholder="e.g. KL-15-A-1234">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100"><i
+                                            class="bi bi-search me-2"></i>Search</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Search Results (Hidden by default) -->
+                        <div id="searchResults" class="d-none">
+                            <div class="card border-0 shadow-sm">
+                                <div
+                                    class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-0">Search Results</h6>
+                                    <span class="badge bg-secondary-subtle text-secondary">Found 3 Records</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light text-secondary text-uppercase small">
+                                            <tr>
+                                                <th class="ps-4">Date</th>
+                                                <th>Service Type</th>
+                                                <th>Route</th>
+                                                <th>Sch. Arr</th>
+                                                <th>Act. Arr</th>
+                                                <th>Sch. Dep</th>
+                                                <th>Act. Dep</th>
+                                                <th>Current Depo</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="ps-4">Oct 24, 2023</td>
+                                                <td><span
+                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
+                                                        Fast</span></td>
+                                                <td>TVM - Kannur</td>
+                                                <td>14:10</td>
+                                                <td>14:15</td>
+                                                <td>14:25</td>
+                                                <td>14:30</td>
+                                                <td>Kannur</td>
+                                                <td><span class="text-success fw-bold">On Time</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="ps-4">Oct 23, 2023</td>
+                                                <td><span
+                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
+                                                        Fast</span></td>
+                                                <td>TVM - Kannur</td>
+                                                <td>14:05</td>
+                                                <td>14:10</td>
+                                                <td>14:30</td>
+                                                <td>14:35</td>
+                                                <td>Kozhikode</td>
+                                                <td><span class="text-danger fw-bold">Delayed (+5m)</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="ps-4">Oct 22, 2023</td>
+                                                <td><span
+                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
+                                                        Fast</span></td>
+                                                <td>TVM - Kannur</td>
+                                                <td>14:10</td>
+                                                <td>14:15</td>
+                                                <td>14:25</td>
+                                                <td>14:30</td>
+                                                <td>Trivandrum</td>
+                                                <td><span class="text-success fw-bold">On Time</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Pane: Daily Master Log -->
+            <div class="tab-pane fade" id="daily-log" role="tabpanel" tabindex="0">
+                <div class="card border-0 shadow-sm">
+                    <div
+                        class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-0">Daily Master Schedule</h5>
+                            <span class="text-muted small" id="masterLogDate">Today, Oct 25, 2023</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm bg-light border-0" style="width: 150px;">
+                                <option selected>All Services</option>
+                                <option>Super Fast</option>
+                                <option>Ordinary</option>
+                                <option>Minnal</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>
+                                Export</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle mb-0 text-nowrap">
+                            <thead class="bg-primary text-white text-uppercase small">
+                                <tr>
+                                    <th class="ps-4 py-3">Bus No.</th>
+                                    <th class="py-3">Category</th>
+                                    <th class="py-3">Route</th>
+                                    <th class="py-3">Sch. Arr</th>
+                                    <th class="py-3">Act. Arr</th>
+                                    <th class="py-3">Sch. Dep</th>
+                                    <th class="py-3">Act. Dep</th>
+                                    <th class="py-3">Alerts</th>
+                                    <th class="pe-4 py-3 text-end">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fw-medium small">
+                                <!-- Mock Data Row 1 -->
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-1102</td>
+                                    <td>Super Fast</td>
+                                    <td>Trivandrum - Kannur</td>
+                                    <td>14:00</td>
+                                    <td class="text-success">13:58</td>
+                                    <td>14:15</td>
+                                    <td class="text-danger">14:18</td>
+                                    <td><span class="badge bg-warning text-dark">Dep Delay</span></td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-primary rounded-pill px-3">Running</span></td>
+                                </tr>
+                                <!-- Mock Data Row 2 -->
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-5490</td>
+                                    <td>Ordinary</td>
+                                    <td>Nedumangad Local</td>
+                                    <td>14:05</td>
+                                    <td class="text-danger">14:10</td>
+                                    <td>14:20</td>
+                                    <td class="text-danger">14:21</td>
+                                    <td>-</td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-success rounded-pill px-3">Completed</span></td>
+                                </tr>
+                                <!-- Mock Data Row 3 -->
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-0098</td>
+                                    <td>Minnal</td>
+                                    <td>TVM - Sulthan Bathery</td>
+                                    <td>14:15</td>
+                                    <td class="text-success">14:15</td>
+                                    <td>14:35</td>
+                                    <td class="text-success">14:35</td>
+                                    <td><span class="badge bg-success">On Time</span></td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-warning text-dark rounded-pill px-3">Rescheduled</span></td>
+                                </tr>
+                                <!-- Mock Data Row 4 -->
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-2121</td>
+                                    <td>Fast Pass.</td>
+                                    <td>Ernakulam Bypass</td>
+                                    <td>14:25</td>
+                                    <td class="text-danger">14:40</td>
+                                    <td>14:40</td>
+                                    <td class="text-danger">14:46</td>
+                                    <td><span class="badge bg-secondary">Maint. Check</span></td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-danger rounded-pill px-3">Cancelled</span></td>
+                                </tr>
+                                <!-- Mock Data Row 5 -->
+                                <tr>
+                                    <td class="ps-4 fw-bold">KL-15-A-3333</td>
+                                    <td>Low Floor</td>
+                                    <td>City Circular</td>
+                                    <td>15:00</td>
+                                    <td class="text-muted">--:--</td>
+                                    <td>15:15</td>
+                                    <td class="text-muted">--:--</td>
+                                    <td><span class="badge bg-info text-dark">Scheduled</span></td>
+                                    <td class="pe-4 text-end"><span
+                                            class="badge bg-primary rounded-pill px-3">Running</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white border-top py-3">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center mb-0">
+                                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
