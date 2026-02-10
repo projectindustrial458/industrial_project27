@@ -174,11 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i < tr.length; i++) { // Start from 1 to skip header
                 let displayed = false;
                 // Search in Bus Number (index 0) and Current Depo (index 8)
-                // Adjust indices if needed. 
-                // Based on index.html:
-                // 0: Bus Number (td class ps-4)
-                // 8: Current Depo
-
                 const tdBusNo = tr[i].getElementsByTagName('td')[0];
                 const tdDepo = tr[i].getElementsByTagName('td')[8];
 
@@ -195,12 +190,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Initialize Dashboard Updates
+    updateDashboard();
+
+    // Auto-refresh every 10 seconds
+    setInterval(() => {
+        console.log('DEBUG: Auto-refreshing dashboard...');
+        updateDashboard();
+    }, 10000);
 });
 
-// Login Handler (outside DOMContentLoaded to ensure it runs if script is loaded differently, 
-// though strictly it should be inside. But for login.html which might not have all the index structure...)
-// Actually better keep it separate or check if element exists.
-
+// Login Handler
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -278,7 +279,6 @@ if (waybillForm) {
             data[key] = value;
         });
 
-        // Add movement type from radio buttons if not caught by FormData (though it should be)
         const movementType = document.querySelector('input[name="movementType"]:checked')?.value;
         if (movementType) data.movementType = movementType;
 
@@ -303,6 +303,12 @@ if (waybillForm) {
                 alert('Waybill entry logged successfully!');
                 waybillForm.reset();
                 updateActualTime(); // Reset time to now
+
+                // Trigger live update
+                if (typeof updateDashboard === 'function') {
+                    console.log('DEBUG: Triggering immediate update');
+                    updateDashboard();
+                }
             } else {
                 alert('Error: ' + result.message);
             }
@@ -315,3 +321,99 @@ if (waybillForm) {
         }
     });
 }
+
+// Live Dashboard Update Logic
+async function updateDashboard() {
+    console.log('DEBUG: updateDashboard() started');
+    try {
+        const response = await fetch('/api/live-data');
+        console.log('DEBUG: /api/live-data response status:', response.status);
+
+        if (!response.ok) {
+            console.error('DEBUG: Failed to fetch live data');
+            return;
+        }
+
+        const data = await response.json();
+        console.log('DEBUG: Fetched data:', data);
+
+        if (data.status === 'success') {
+            // Update Stats
+            const activeFleetEl = document.getElementById('activeFleetCount');
+            const punctualityEl = document.getElementById('punctualityScore');
+            const utilizationEl = document.getElementById('utilizationIndex');
+
+            if (activeFleetEl) {
+                activeFleetEl.textContent = data.stats.active_fleet;
+            }
+            if (punctualityEl) punctualityEl.textContent = data.stats.punctuality + '%';
+            if (utilizationEl) utilizationEl.textContent = data.stats.utilization + '%';
+
+            // Update Table
+            const tableBody = document.querySelector('#liveTrackerTable tbody');
+            if (tableBody) {
+                console.log('DEBUG: Updating table with', data.waybills.length, 'rows');
+                tableBody.innerHTML = ''; // Clear current rows
+
+                if (data.waybills.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No live data available for this depot yet.</td></tr>';
+                } else {
+                    data.waybills.forEach(wb => {
+                        const tr = document.createElement('tr');
+
+                        // Movement Check
+                        let schArr = '-', actArr = '-', schDep = '-', actDep = '-';
+                        let badgeClass = '';
+
+                        // Basic Logic for times
+                        if (wb.movementType === 'Arrival') {
+                            schArr = wb.scheduledTime;
+                            actArr = wb.actualTime;
+                            badgeClass = 'bg-success-subtle text-success';
+                        } else {
+                            schDep = wb.scheduledTime;
+                            actDep = wb.actualTime;
+                            badgeClass = 'bg-warning-subtle text-warning';
+                        }
+
+                        // Delay Calculation Logic
+                        let isDelayed = false;
+                        if (wb.actualTime > wb.scheduledTime) {
+                            isDelayed = true;
+                        }
+
+                        // Helper for class
+                        const timeClass = isDelayed ? 'text-danger' : 'text-success';
+                        const deviationText = isDelayed ? 'Delayed' : 'On Time';
+                        const deviationClass = isDelayed ? 'text-danger fw-bold' : 'text-success fw-bold';
+
+                        tr.innerHTML = `
+                            <td class="ps-4 fw-bold">${wb.busRegNo}</td>
+                            <td><span class="badge border text-dark rounded-pill fw-normal px-3">${wb.serviceCategory}</span></td>
+                            <td>${wb.origin} - ${wb.destination}</td>
+                            
+                            <td>${schArr}</td>
+                            <td class="${wb.movementType === 'Arrival' ? timeClass : ''}">${actArr}</td>
+                            <td>${schDep}</td>
+                            <td class="${wb.movementType === 'Departure' ? timeClass : ''}">${actDep}</td>
+                            
+                            <td class="${deviationClass}">${deviationText}</td>
+                            <td>${wb.depot_id}</td>
+                            <td class="pe-4 text-end">
+                                <span class="badge ${badgeClass} rounded-1 px-3 py-2">${wb.movementType}</span>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                }
+            } else {
+                console.error('DEBUG: Table body #liveTrackerTable tbody not found');
+            }
+        }
+    } catch (error) {
+        console.error('DEBUG: Error updating dashboard:', error);
+    }
+}
+
+// Ensure globally accessible
+window.updateDashboard = updateDashboard;

@@ -19,10 +19,14 @@ print(f"DEBUG: Mongo initialized. DB: {mongo.db}")
 @app.route('/')
 @app.route('/index.html')
 def home():
-    # Check if user is logged in via session in frontend, 
-    # but for now just serve the index page.
-    # In a real app, you might redirect to login if not authenticated.
-    return render_template('index.html')
+    # Check if user is logged in
+    waybills = []
+    if 'user' in session:
+        depot_id = session['user']['depot_id']
+        # Fetch waybills for this depot, sorted by most recent
+        waybills = list(mongo.db.waybills.find({"depot_id": depot_id}).sort("timestamp", -1))
+    
+    return render_template('index.html', waybills=waybills)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -136,6 +140,68 @@ def save_waybill():
     except Exception as e:
         print(f"ERROR in /api/waybill: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+@app.route('/api/live-data', methods=['GET'])
+def get_live_data():
+    if 'user' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    try:
+        depot_id = session['user']['depot_id']
+        
+        # Fetch waybills (limit to last 50 for performance if needed, but for now all)
+        # Sort by timestamp desc
+        cursor = mongo.db.waybills.find({"depot_id": depot_id}).sort("timestamp", -1)
+        waybills = list(cursor)
+        
+        # Convert ObjectId to string for JSON serialization if needed, 
+        # but PyMongo's jsonify usually handles it or we manually helper.
+        # Let's create a clean list of dicts.
+        data_list = []
+        on_time_count = 0
+        
+        for wb in waybills:
+            # Basic stats logic
+            if wb.get('actualTime') and wb.get('scheduledTime'):
+                if wb['actualTime'] <= wb['scheduledTime']:
+                    on_time_count += 1
+            
+            # Prepare dict for JSON
+            item = {
+                "busRegNo": wb.get('busRegNo', ''),
+                "serviceCategory": wb.get('serviceCategory', ''),
+                "origin": wb.get('origin', ''),
+                "destination": wb.get('destination', ''),
+                "scheduledTime": wb.get('scheduledTime', ''),
+                "actualTime": wb.get('actualTime', ''),
+                "movementType": wb.get('movementType', ''),
+                "depot_id": wb.get('depot_id', '')
+            }
+            data_list.append(item)
+            
+        # Punctuality Score
+        total = len(waybills)
+        punctuality = 0
+        if total > 0:
+            punctuality = round((on_time_count / total) * 100, 1)
+            
+        # Active Fleet (approximate based on unique buses in list)
+        unique_buses = set(wb.get('busRegNo') for wb in waybills)
+        active_fleet = len(unique_buses)
+
+        return jsonify({
+            "status": "success",
+            "waybills": data_list,
+            "stats": {
+                "active_fleet": active_fleet,
+                "punctuality": punctuality,
+                "utilization": 76 # Placeholder/Mock for now as per original design
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"ERROR in /api/live-data: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/test_db')
 def test_db():
