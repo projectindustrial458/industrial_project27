@@ -147,6 +147,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Run basic auth check on load
     if (!window.location.pathname.includes('login.html')) {
         checkAuth();
+
+        // Populate Platform Dropdown
+        const sessionData = sessionStorage.getItem(AUTH_KEY);
+        if (sessionData) {
+            const data = JSON.parse(sessionData);
+            const platformSelect = document.getElementById('platformNumber');
+            if (platformSelect && data.platforms && data.platforms.length > 0) {
+                // Keep the first default option
+                platformSelect.innerHTML = '<option value="" disabled selected>PF</option>';
+                data.platforms.forEach(pf => {
+                    const option = document.createElement('option');
+                    option.value = pf;
+                    option.textContent = pf;
+                    platformSelect.appendChild(option);
+                });
+            }
+        }
     }
 
     // Logout Handler
@@ -231,6 +248,8 @@ if (loginForm) {
                     sessionStorage.setItem('ksrtc_sm_session', JSON.stringify({
                         depotId: depotId,
                         stationMasterId: stationMasterId,
+                        depotName: data.depot_name || "",
+                        platforms: data.platforms || [],
                         loginTime: new Date().toISOString()
                     }));
 
@@ -349,6 +368,9 @@ async function updateDashboard() {
             if (punctualityEl) punctualityEl.textContent = data.stats.punctuality + '%';
             if (utilizationEl) utilizationEl.textContent = data.stats.utilization + '%';
 
+            // Update Platforms
+            updatePlatforms(data.waybills);
+
             // Update Table
             const tableBody = document.querySelector('#liveTrackerTable tbody');
             if (tableBody) {
@@ -415,5 +437,76 @@ async function updateDashboard() {
     }
 }
 
+// Update dynamic platform bays
+function updatePlatforms(waybills) {
+    const container = document.getElementById('platformsContainer');
+    const template = document.getElementById('platformCardTemplate');
+    const sessionData = sessionStorage.getItem('ksrtc_sm_session');
+
+    if (!container || !template || !sessionData) return;
+
+    const session = JSON.parse(sessionData);
+    const platforms = session.platforms || [];
+
+    if (platforms.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center py-4 text-muted">No platforms configured for this depot.</div>';
+        return;
+    }
+
+    container.innerHTML = ''; // Clear current
+
+    // Logic to find current bus at each platform
+    // Sort waybills by timestamp (most recent first) - usually already sorted from API
+
+    platforms.forEach(pf => {
+        // Find most recent waybill for this platform
+        const latestWaybill = waybills.find(wb => wb.platformNumber === pf);
+
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.card');
+        const pfName = clone.querySelector('.pf-name');
+        const pfStatus = clone.querySelector('.pf-status');
+        const pfBusGraphic = clone.querySelector('.pf-bus-graphic');
+        const pfRoute = clone.querySelector('.pf-route');
+        const pfTime = clone.querySelector('.pf-time');
+
+        pfName.textContent = `P-${pf}`;
+
+        if (latestWaybill && latestWaybill.movementType === 'Arrival') {
+            // OCCUPIED
+            card.classList.add('pf-occupied');
+            pfStatus.textContent = 'OCCUPIED';
+            pfStatus.classList.add('pf-status-occupied');
+
+            pfBusGraphic.innerHTML = `
+                <div class="bg-light rounded p-3 d-inline-block position-relative bus-active">
+                    <i class="bi bi-bus-front-fill fs-1 text-danger"></i>
+                    <div class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
+                        ${latestWaybill.busRegNo.split('-').slice(0, 2).join('-')}
+                    </div>
+                </div>
+            `;
+            pfRoute.textContent = `${latestWaybill.origin} - ${latestWaybill.destination}`;
+            pfTime.textContent = `Arr: ${latestWaybill.actualTime}`;
+        } else {
+            // EMPTY
+            card.classList.add('pf-empty');
+            pfStatus.textContent = 'EMPTY';
+            pfStatus.classList.add('pf-status-empty');
+
+            pfBusGraphic.innerHTML = `
+                <div class="bg-light rounded p-3 d-inline-block position-relative opacity-25">
+                    <i class="bi bi-slash-circle fs-1 text-secondary"></i>
+                </div>
+            `;
+            pfRoute.textContent = 'Available';
+            pfTime.textContent = '--:--';
+        }
+
+        container.appendChild(clone);
+    });
+}
+
 // Ensure globally accessible
 window.updateDashboard = updateDashboard;
+window.updatePlatforms = updatePlatforms;

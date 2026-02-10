@@ -54,10 +54,16 @@ def login():
             session['user'] = {
                 "depot_id": user['depot_id'],
                 "station_master_id": user['station_master_id'],
-                "depot_name": user['depot_name']
+                "depot_name": user['depot_name'],
+                "platforms": user.get('platforms', [])
             }
-            print("DEBUG: Login successful, session created.")
-            return jsonify({"status": "success", "message": "Login successful"}), 200
+            print(f"DEBUG: Login successful for {station_master_id}, session created with platforms: {user.get('platforms', [])}")
+            return jsonify({
+                "status": "success", 
+                "message": "Login successful",
+                "depot_name": user['depot_name'],
+                "platforms": user.get('platforms', [])
+            }), 200
         else:
             print("DEBUG: Invalid credentials.")
             return jsonify({"status": "error", "message": "Invalid credentials"}), 401
@@ -175,6 +181,7 @@ def get_live_data():
                 "scheduledTime": wb.get('scheduledTime', ''),
                 "actualTime": wb.get('actualTime', ''),
                 "movementType": wb.get('movementType', ''),
+                "platformNumber": wb.get('platformNumber', ''),
                 "depot_id": wb.get('depot_id', '')
             }
             data_list.append(item)
