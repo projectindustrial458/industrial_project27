@@ -121,14 +121,6 @@
                         <div class="active-indicator"></div>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
-                        id="efficiency-analytics-tab" data-bs-toggle="tab" data-bs-target="#efficiency-analytics"
-                        type="button" role="tab" aria-selected="false">
-                        Efficiency Analytics
-                        <div class="active-indicator"></div>
-                    </button>
-                </li>
 
                 <li class="nav-item" role="presentation">
                     <button class="nav-link py-3 border-0 bg-transparent fw-medium text-secondary position-relative"
@@ -167,9 +159,8 @@
                             </div>
                             <div class="d-flex align-items-end gap-3 mt-3">
                                 <h2 class="display-4 fw-bold text-dark mb-0" id="activeFleetCount">--</h2>
-                                <span
-                                    class="badge bg-success-subtle text-success mb-2 px-3 py-2 rounded-pill fw-medium">+3
-                                    Arriving Soon</span>
+                                <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 rounded-pill fw-medium"
+                                    id="incomingStatus">Real-time</span>
                             </div>
                             <p class="text-muted small mt-2 mb-0">Buses Currently In Depot</p>
                         </div>
@@ -185,7 +176,7 @@
                             <div class="mt-3">
                                 <h2 class="display-4 fw-bold text-dark mb-0" id="punctualityScore">--%</h2>
                             </div>
-                            <p class="text-muted small mt-2 mb-0">Average Departure Delay: 4 min</p>
+                            <p class="text-muted small mt-2 mb-0" id="avgDelayText">Live Efficiency Tracking</p>
                         </div>
                     </div>
 
@@ -197,9 +188,9 @@
                                 <i class="bi bi-graph-up-arrow text-primary fs-4"></i>
                             </div>
                             <div class="mt-3">
-                                <h2 class="display-4 fw-bold text-dark mb-0" id="utilizationIndex">76%</h2>
+                                <h2 class="display-4 fw-bold text-dark mb-0" id="utilizationIndex">--%</h2>
                             </div>
-                            <p class="text-muted small mt-2 mb-0">Occupancy Ratio (IE Metric)</p>
+                            <p class="text-muted small mt-2 mb-0">Occupancy & Resource Ratio</p>
                         </div>
                     </div>
                 </div>
@@ -486,90 +477,6 @@
                 </div>
             </div>
 
-            <!-- Tab Pane: Efficiency Analytics -->
-            <div class="tab-pane fade" id="efficiency-analytics" role="tabpanel" tabindex="0">
-                <div class="card border-0 shadow-sm p-4 mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold mb-0 text-dark">Earnings Per KM (EPKM) Optimization Trend</h5>
-                        <span
-                            class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">TARGET:
-                            ₹45.00</span>
-                    </div>
-                    <!-- Chart Container -->
-                    <div style="height: 300px; width: 100%;">
-                        <canvas id="epkmChart"></canvas>
-                    </div>
-                    <div class="mt-3 p-3 bg-light rounded border border-light">
-                        <p class="mb-0 text-secondary small"><strong class="text-primary">IE Insight:</strong> Wednesday
-                            shows a <span class="text-danger fw-bold">32% drop</span> in EPKM. Suggesting consolidation
-                            of Ordinary services on the Kottayam route to improve load factor.</p>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm p-4">
-                    <h5 class="fw-bold mb-4 text-dark">Delay Root Cause Analysis (Bottleneck Identification)</h5>
-
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold small text-uppercase text-secondary">Traffic Congestion
-                                (External)</span>
-                            <span class="fw-bold small">45%</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-warning" role="progressbar" style="width: 45%"
-                                aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold small text-uppercase text-secondary">Platform Congestion (Station
-                                Bottleneck)</span>
-                            <span class="fw-bold small">28%</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: 28%" aria-valuenow="28"
-                                aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold small text-uppercase text-secondary">Crew Handover Delay</span>
-                            <span class="fw-bold small">15%</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-secondary" role="progressbar" style="width: 15%"
-                                aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold small text-uppercase text-secondary">Mechanical Check</span>
-                            <span class="fw-bold small">12%</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-secondary opacity-50" role="progressbar" style="width: 12%"
-                                aria-valuenow="12" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase small fw-bold text-secondary mb-1">Mean Waiting Time</h6>
-                            <h3 class="fw-bold text-dark">6.2m <span class="text-muted fs-6 fw-normal">avg</span></h3>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase small fw-bold text-secondary mb-1">Throughput Rate</h6>
-                            <h3 class="fw-bold text-dark">14.5 <span class="text-muted fs-6 fw-normal">buses/hr</span>
-                            </h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Tab Pane: Optimization Engine -->
             <div class="tab-pane fade" id="optimization-engine" role="tabpanel" tabindex="0">
@@ -586,21 +493,46 @@
                     <div class="col-lg-10">
                         <div class="card border-0 shadow-sm p-4 mb-4">
                             <h5 class="fw-bold mb-4 text-dark">Search Bus Records</h5>
-                            <form id="searchForm" class="row g-3">
-                                <div class="col-md-5">
+                            <form id="busSearchForm" class="row g-3">
+                                <div class="col-md-3">
                                     <label class="form-label text-uppercase small fw-bold text-secondary">Date</label>
                                     <input type="date" class="form-control form-control-lg bg-light border-0"
-                                        id="searchDate">
+                                        id="historySearchDate">
                                 </div>
-                                <div class="col-md-5">
+                                <div class="col-md-3">
                                     <label class="form-label text-uppercase small fw-bold text-secondary">Bus
-                                        Registration No.</label>
+                                        Reg No.</label>
                                     <input type="text" class="form-control form-control-lg bg-light border-0"
-                                        id="searchBusNo" placeholder="e.g. KL-15-A-1234">
+                                        id="historySearchBusNo" placeholder="KL-15-A-1234">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-uppercase small fw-bold text-secondary">Depot</label>
+                                    <select class="form-select form-select-lg bg-light border-0"
+                                        id="historySearchDepot">
+                                        <option value="">All Depots</option>
+                                        <option value="TVM">TVM</option>
+                                        <option value="KML">KML</option>
+                                        <option value="ALP">ALP</option>
+                                        <option value="KTYM">KTYM</option>
+                                        <option value="ERS">ERS</option>
+                                        <option value="TSR">TSR</option>
+                                        <option value="PGT">PGT</option>
+                                        <option value="KKD">KKD</option>
+                                        <option value="KNR">KNR</option>
+                                        <option value="KGD">KGD</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-uppercase small fw-bold text-secondary">Type</label>
+                                    <select class="form-select form-select-lg bg-light border-0" id="historySearchType">
+                                        <option value="">All</option>
+                                        <option value="Arrival">Arrival</option>
+                                        <option value="Departure">Departure</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary btn-lg w-100"><i
-                                            class="bi bi-search me-2"></i>Search</button>
+                                            class="bi bi-search"></i></button>
                                 </div>
                             </form>
                         </div>
@@ -611,63 +543,25 @@
                                 <div
                                     class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                     <h6 class="fw-bold mb-0">Search Results</h6>
-                                    <span class="badge bg-secondary-subtle text-secondary">Found 3 Records</span>
+                                    <span id="searchResultCount" class="badge bg-secondary-subtle text-secondary">0
+                                        Records Found</span>
                                 </div>
                                 <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
+                                    <table class="table table-hover align-middle mb-0" id="historyResultsTable">
                                         <thead class="bg-light text-secondary text-uppercase small">
                                             <tr>
-                                                <th class="ps-4">Date</th>
-                                                <th>Service Type</th>
+                                                <th class="ps-4">Date/Time</th>
+                                                <th>Bus No</th>
+                                                <th>Service</th>
                                                 <th>Route</th>
-                                                <th>Sch. Arr</th>
-                                                <th>Act. Arr</th>
-                                                <th>Sch. Dep</th>
-                                                <th>Act. Dep</th>
-                                                <th>Current Depo</th>
-                                                <th>Status</th>
+                                                <th>Type</th>
+                                                <th>Origin</th>
+                                                <th>Destination</th>
+                                                <th class="pe-4 text-end">Depot</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td class="ps-4">Oct 24, 2023</td>
-                                                <td><span
-                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
-                                                        Fast</span></td>
-                                                <td>TVM - Kannur</td>
-                                                <td>14:10</td>
-                                                <td>14:15</td>
-                                                <td>14:25</td>
-                                                <td>14:30</td>
-                                                <td>Kannur</td>
-                                                <td><span class="text-success fw-bold">On Time</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="ps-4">Oct 23, 2023</td>
-                                                <td><span
-                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
-                                                        Fast</span></td>
-                                                <td>TVM - Kannur</td>
-                                                <td>14:05</td>
-                                                <td>14:10</td>
-                                                <td>14:30</td>
-                                                <td>14:35</td>
-                                                <td>Kozhikode</td>
-                                                <td><span class="text-danger fw-bold">Delayed (+5m)</span></td>
-                                            </tr>
-                                            <tr>
-                                                <td class="ps-4">Oct 22, 2023</td>
-                                                <td><span
-                                                        class="badge border text-dark rounded-pill fw-normal px-3">Super
-                                                        Fast</span></td>
-                                                <td>TVM - Kannur</td>
-                                                <td>14:10</td>
-                                                <td>14:15</td>
-                                                <td>14:25</td>
-                                                <td>14:30</td>
-                                                <td>Trivandrum</td>
-                                                <td><span class="text-success fw-bold">On Time</span></td>
-                                            </tr>
+                                            <!-- Dynamic rows will be inserted here -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -676,125 +570,65 @@
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
 
-            <!-- Tab Pane: Daily Master Log -->
-            <div class="tab-pane fade" id="daily-log" role="tabpanel" tabindex="0">
-                <div class="card border-0 shadow-sm">
-                    <div
-                        class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                            <h5 class="fw-bold mb-0">Daily Master Schedule</h5>
-                            <span class="text-muted small" id="masterLogDate">Today, Oct 25, 2023</span>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <select class="form-select form-select-sm bg-light border-0" style="width: 150px;">
-                                <option selected>All Services</option>
-                                <option>Super Fast</option>
-                                <option>Ordinary</option>
-                                <option>Minnal</option>
-                            </select>
-                            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>
-                                Export</button>
-                        </div>
+        <!-- Tab Pane: Daily Master Log -->
+        <div class="tab-pane fade" id="daily-log" role="tabpanel" tabindex="0">
+            <div class="card border-0 shadow-sm">
+                <div
+                    class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-0">Daily Master Schedule</h5>
+                        <span class="text-muted small" id="masterLogDate">Today, Oct 25, 2023</span>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover align-middle mb-0 text-nowrap">
-                            <thead class="bg-primary text-white text-uppercase small">
-                                <tr>
-                                    <th class="ps-4 py-3">Bus No.</th>
-                                    <th class="py-3">Category</th>
-                                    <th class="py-3">Route</th>
-                                    <th class="py-3">Sch. Arr</th>
-                                    <th class="py-3">Act. Arr</th>
-                                    <th class="py-3">Sch. Dep</th>
-                                    <th class="py-3">Act. Dep</th>
-                                    <th class="py-3">Alerts</th>
-                                    <th class="pe-4 py-3 text-end">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="fw-medium small">
-                                <!-- Mock Data Row 1 -->
-                                <tr>
-                                    <td class="ps-4 fw-bold">KL-15-A-1102</td>
-                                    <td>Super Fast</td>
-                                    <td>Trivandrum - Kannur</td>
-                                    <td>14:00</td>
-                                    <td class="text-success">13:58</td>
-                                    <td>14:15</td>
-                                    <td class="text-danger">14:18</td>
-                                    <td><span class="badge bg-warning text-dark">Dep Delay</span></td>
-                                    <td class="pe-4 text-end"><span
-                                            class="badge bg-primary rounded-pill px-3">Running</span></td>
-                                </tr>
-                                <!-- Mock Data Row 2 -->
-                                <tr>
-                                    <td class="ps-4 fw-bold">KL-15-A-5490</td>
-                                    <td>Ordinary</td>
-                                    <td>Nedumangad Local</td>
-                                    <td>14:05</td>
-                                    <td class="text-danger">14:10</td>
-                                    <td>14:20</td>
-                                    <td class="text-danger">14:21</td>
-                                    <td>-</td>
-                                    <td class="pe-4 text-end"><span
-                                            class="badge bg-success rounded-pill px-3">Completed</span></td>
-                                </tr>
-                                <!-- Mock Data Row 3 -->
-                                <tr>
-                                    <td class="ps-4 fw-bold">KL-15-A-0098</td>
-                                    <td>Minnal</td>
-                                    <td>TVM - Sulthan Bathery</td>
-                                    <td>14:15</td>
-                                    <td class="text-success">14:15</td>
-                                    <td>14:35</td>
-                                    <td class="text-success">14:35</td>
-                                    <td><span class="badge bg-success">On Time</span></td>
-                                    <td class="pe-4 text-end"><span
-                                            class="badge bg-warning text-dark rounded-pill px-3">Rescheduled</span></td>
-                                </tr>
-                                <!-- Mock Data Row 4 -->
-                                <tr>
-                                    <td class="ps-4 fw-bold">KL-15-A-2121</td>
-                                    <td>Fast Pass.</td>
-                                    <td>Ernakulam Bypass</td>
-                                    <td>14:25</td>
-                                    <td>14:25</td>
-                                    <td class="text-danger">14:40</td>
-                                    <td>14:40</td>
-                                    <td class="text-danger">14:46</td>
-                                    <td><span class="badge bg-secondary">Maint. Check</span></td>
-                                    <td class="pe-4 text-end"><span
-                                            class="badge bg-danger rounded-pill px-3">Cancelled</span></td>
-                                </tr>
-                                <!-- Mock Data Row 5 -->
-                                <tr>
-                                    <td class="ps-4 fw-bold">KL-15-A-3333</td>
-                                    <td>Low Floor</td>
-                                    <td>City Circular</td>
-                                    <td>15:00</td>
-                                    <td class="text-muted">--:--</td>
-                                    <td>15:15</td>
-                                    <td class="text-muted">--:--</td>
-                                    <td><span class="badge bg-info text-dark">Scheduled</span></td>
-                                    <td class="pe-4 text-end"><span
-                                            class="badge bg-primary rounded-pill px-3">Running</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card-footer bg-white border-top py-3">
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center mb-0">
-                                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                            </ul>
-                        </nav>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm bg-light border-0" style="width: 150px;">
+                            <option selected>All Services</option>
+                            <option>Super Fast</option>
+                            <option>Ordinary</option>
+                            <option>Minnal</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>
+                            Export</button>
                     </div>
                 </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0 text-nowrap">
+                        <thead class="bg-primary text-white text-uppercase small">
+                            <tr>
+                                <th class="ps-4 py-3">Bus No.</th>
+                                <th class="py-3">Category</th>
+                                <th class="py-3">Route</th>
+                                <th class="py-3">Sch. Arr</th>
+                                <th class="py-3">Act. Arr</th>
+                                <th class="py-3">Sch. Dep</th>
+                                <th class="py-3">Act. Dep</th>
+                                <th class="py-3">Alerts</th>
+                                <th class="pe-4 py-3 text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="fw-medium small" id="dailyLogTableBody">
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">Master schedule data will be
+                                    dynamically loaded here.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white border-top py-3">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
+        </div>
 
         </div>
     </main>

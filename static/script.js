@@ -14,61 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateTime, 1000);
     updateTime();
 
-    // Initialize EPKM Chart
-    const ctx = document.getElementById('epkmChart');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-                datasets: [{
-                    label: 'EPKM Trend',
-                    data: [42, 44, 30, 41, 43], // Matches the visual dip in Wed
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.05)',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#0d6efd',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: '#e9ecef',
-                            borderDash: [5, 5]
-                        },
-                        ticks: {
-                            callback: function (value) {
-                                return '₹' + value;
-                            }
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-    }
 
     // Default Date Inputs to Today
     const today = new Date().toISOString().split('T')[0];
@@ -180,43 +125,117 @@ document.addEventListener('DOMContentLoaded', () => {
             logout();
         }
     });
-    // Live Sequence Tracker Search
+    // Live Sequence Tracker Global Search
     const liveTrackerSearchInput = document.getElementById('liveTrackerSearchInput');
+    let isGlobalSearchActive = false;
+
     if (liveTrackerSearchInput) {
-        liveTrackerSearchInput.addEventListener('keyup', function () {
+        liveTrackerSearchInput.addEventListener('keypress', async function (e) {
+            if (e.key === 'Enter') {
+                const busNo = this.value.trim().toUpperCase();
+                if (!busNo) {
+                    isGlobalSearchActive = false;
+                    updateDashboard();
+                    return;
+                }
+
+                console.log(`DEBUG: Global search for bus: ${busNo}`);
+                isGlobalSearchActive = true;
+
+                try {
+                    const response = await fetch(`/api/bus-history/${busNo}`);
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        renderWaybillTable(data.waybills, true);
+                    }
+                } catch (error) {
+                    console.error('DEBUG: Global search error:', error);
+                }
+            }
+        });
+
+        // Local filtering for quick interaction
+        liveTrackerSearchInput.addEventListener('input', function () {
+            if (isGlobalSearchActive) return; // Don't filter if we are in global mode
+
             const filter = this.value.toUpperCase();
             const table = document.getElementById('liveTrackerTable');
             const tr = table.getElementsByTagName('tr');
 
-            for (let i = 1; i < tr.length; i++) { // Start from 1 to skip header
-                let displayed = false;
-                // Search in Bus Number (index 0) and Current Depo (index 8)
-                const tdBusNo = tr[i].getElementsByTagName('td')[0];
-                const tdDepo = tr[i].getElementsByTagName('td')[8];
-
-                if (tdBusNo || tdDepo) {
-                    const txtBusNo = tdBusNo.textContent || tdBusNo.innerText;
-                    const txtDepo = tdDepo ? (tdDepo.textContent || tdDepo.innerText) : "";
-
-                    if (txtBusNo.toUpperCase().indexOf(filter) > -1 || txtDepo.toUpperCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
-                    } else {
-                        tr[i].style.display = "none";
-                    }
-                }
+            for (let i = 1; i < tr.length; i++) {
+                const txtBusNo = tr[i].getElementsByTagName('td')[0]?.textContent || "";
+                tr[i].style.display = txtBusNo.toUpperCase().indexOf(filter) > -1 ? "" : "none";
             }
         });
     }
 
     // Initialize Dashboard Updates
     updateDashboard();
+    updateMasterLog();
 
-    // Auto-refresh every 10 seconds
+    // Auto-refresh logic
     setInterval(() => {
-        console.log('DEBUG: Auto-refreshing dashboard...');
-        updateDashboard();
+        if (!isGlobalSearchActive) {
+            console.log('DEBUG: Auto-refreshing dashboard...');
+            updateDashboard();
+            updateMasterLog();
+        }
     }, 10000);
 });
+
+async function updateMasterLog() {
+    try {
+        const response = await fetch('/api/master-log');
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            const dateEl = document.getElementById('masterLogDate');
+            if (dateEl) dateEl.textContent = `Today, ${data.date}`;
+
+            const tableBody = document.getElementById('dailyLogTableBody');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '';
+
+            if (data.waybills.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No movements recorded for today yet.</td></tr>';
+                return;
+            }
+
+            data.waybills.forEach(wb => {
+                const tr = document.createElement('tr');
+
+                // Movement Check
+                let schArr = '-', actArr = '-', schDep = '-', actDep = '-';
+                if (wb.movementType === 'Arrival') {
+                    schArr = wb.scheduledTime;
+                    actArr = wb.actualTime;
+                } else {
+                    schDep = wb.scheduledTime;
+                    actDep = wb.actualTime;
+                }
+
+                tr.innerHTML = `
+                    <td class="ps-4 fw-bold">${wb.busRegNo}</td>
+                    <td>${wb.serviceCategory}</td>
+                    <td>${wb.route}</td>
+                    <td>${schArr}</td>
+                    <td class="${actArr > schArr ? 'text-danger' : 'text-success'}">${actArr}</td>
+                    <td>${schDep}</td>
+                    <td class="${actDep > schDep ? 'text-danger' : 'text-success'}">${actDep}</td>
+                    <td><span class="badge border bg-light text-dark">${wb.alerts}</span></td>
+                    <td class="pe-4 text-end">
+                        <span class="badge ${wb.statusClass} rounded-pill px-3">${wb.status}</span>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    } catch (error) {
+        console.error('DEBUG: Error updating Master Log:', error);
+    }
+}
 
 // Login Handler
 const loginForm = document.getElementById('loginForm');
@@ -372,69 +391,65 @@ async function updateDashboard() {
             updatePlatforms(data.waybills);
 
             // Update Table
-            const tableBody = document.querySelector('#liveTrackerTable tbody');
-            if (tableBody) {
-                console.log('DEBUG: Updating table with', data.waybills.length, 'rows');
-                tableBody.innerHTML = ''; // Clear current rows
-
-                if (data.waybills.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No live data available for this depot yet.</td></tr>';
-                } else {
-                    data.waybills.forEach(wb => {
-                        const tr = document.createElement('tr');
-
-                        // Movement Check
-                        let schArr = '-', actArr = '-', schDep = '-', actDep = '-';
-                        let badgeClass = '';
-
-                        // Basic Logic for times
-                        if (wb.movementType === 'Arrival') {
-                            schArr = wb.scheduledTime;
-                            actArr = wb.actualTime;
-                            badgeClass = 'bg-success-subtle text-success';
-                        } else {
-                            schDep = wb.scheduledTime;
-                            actDep = wb.actualTime;
-                            badgeClass = 'bg-warning-subtle text-warning';
-                        }
-
-                        // Delay Calculation Logic
-                        let isDelayed = false;
-                        if (wb.actualTime > wb.scheduledTime) {
-                            isDelayed = true;
-                        }
-
-                        // Helper for class
-                        const timeClass = isDelayed ? 'text-danger' : 'text-success';
-                        const deviationText = isDelayed ? 'Delayed' : 'On Time';
-                        const deviationClass = isDelayed ? 'text-danger fw-bold' : 'text-success fw-bold';
-
-                        tr.innerHTML = `
-                            <td class="ps-4 fw-bold">${wb.busRegNo}</td>
-                            <td><span class="badge border text-dark rounded-pill fw-normal px-3">${wb.serviceCategory}</span></td>
-                            <td>${wb.origin} - ${wb.destination}</td>
-                            
-                            <td>${schArr}</td>
-                            <td class="${wb.movementType === 'Arrival' ? timeClass : ''}">${actArr}</td>
-                            <td>${schDep}</td>
-                            <td class="${wb.movementType === 'Departure' ? timeClass : ''}">${actDep}</td>
-                            
-                            <td class="${deviationClass}">${deviationText}</td>
-                            <td>${wb.depot_id}</td>
-                            <td class="pe-4 text-end">
-                                <span class="badge ${badgeClass} rounded-1 px-3 py-2">${wb.movementType}</span>
-                            </td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                }
-            } else {
-                console.error('DEBUG: Table body #liveTrackerTable tbody not found');
-            }
+            renderWaybillTable(data.waybills);
         }
     } catch (error) {
         console.error('DEBUG: Error updating dashboard:', error);
     }
+}
+
+function renderWaybillTable(waybills, isGlobal = false) {
+    const tableBody = document.querySelector('#liveTrackerTable tbody');
+    const sessionData = sessionStorage.getItem('ksrtc_sm_session');
+    if (!tableBody || !sessionData) return;
+
+    const session = JSON.parse(sessionData);
+    tableBody.innerHTML = '';
+
+    if (waybills.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">${isGlobal ? 'No history found for this bus.' : 'No live data available for this depot yet.'}</td></tr>`;
+        return;
+    }
+
+    waybills.forEach(wb => {
+        const tr = document.createElement('tr');
+
+        let schArr = '-', actArr = '-', schDep = '-', actDep = '-';
+        let badgeClass = '';
+
+        if (wb.movementType === 'Arrival') {
+            schArr = wb.scheduledTime;
+            actArr = wb.actualTime;
+            badgeClass = 'bg-success-subtle text-success';
+        } else {
+            schDep = wb.scheduledTime;
+            actDep = wb.actualTime;
+            badgeClass = 'bg-warning-subtle text-warning';
+        }
+
+        let isDelayed = wb.actualTime > wb.scheduledTime;
+        const timeClass = isDelayed ? 'text-danger' : 'text-success';
+        const deviationText = isDelayed ? 'Delayed' : 'On Time';
+        const deviationClass = isDelayed ? 'text-danger fw-bold' : 'text-success fw-bold';
+
+        tr.innerHTML = `
+            <td class="ps-4 fw-bold">${wb.busRegNo}</td>
+            <td><span class="badge border text-dark rounded-pill fw-normal px-3">${wb.serviceCategory}</span></td>
+            <td>${wb.origin} - ${wb.destination}</td>
+            
+            <td>${schArr}</td>
+            <td class="${wb.movementType === 'Arrival' ? timeClass : ''}">${actArr}</td>
+            <td>${schDep}</td>
+            <td class="${wb.movementType === 'Departure' ? timeClass : ''}">${actDep}</td>
+            
+            <td class="${deviationClass}">${deviationText}</td>
+            <td><span class="badge ${wb.depot_id === session.depotId ? 'bg-light text-dark' : 'bg-info-subtle text-info'}">${wb.depot_id}</span></td>
+            <td class="pe-4 text-end">
+                <span class="badge ${badgeClass} rounded-1 px-3 py-2">${wb.movementType}</span>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
 }
 
 // Update dynamic platform bays
@@ -507,6 +522,73 @@ function updatePlatforms(waybills) {
     });
 }
 
-// Ensure globally accessible
-window.updateDashboard = updateDashboard;
-window.updatePlatforms = updatePlatforms;
+// Bus Search Records Handler
+const busSearchForm = document.getElementById('busSearchForm');
+if (busSearchForm) {
+    busSearchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const date = document.getElementById('historySearchDate').value;
+        const busNo = document.getElementById('historySearchBusNo').value;
+        const depotId = document.getElementById('historySearchDepot').value;
+        const movementType = document.getElementById('historySearchType').value;
+
+        const btn = busSearchForm.querySelector('button[type="submit"]');
+        const originalBtnContent = btn.innerHTML;
+        const resultsDiv = document.getElementById('searchResults');
+        const resultsTableBody = document.querySelector('#historyResultsTable tbody');
+        const resultCountBadge = document.getElementById('searchResultCount');
+
+        try {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            btn.disabled = true;
+
+            const queryParams = new URLSearchParams({
+                date,
+                busNo,
+                depotId,
+                movementType
+            });
+
+            const response = await fetch(`/api/search?${queryParams.toString()}`);
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                resultsDiv.classList.remove('d-none');
+                resultCountBadge.textContent = `${data.count} Records Found`;
+                resultsTableBody.innerHTML = '';
+
+                if (data.waybills.length === 0) {
+                    resultsTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No records matching your search.</td></tr>';
+                } else {
+                    data.waybills.forEach(wb => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="ps-4 fw-medium">${wb.timestamp}</td>
+                            <td class="fw-bold">${wb.busRegNo}</td>
+                            <td><span class="badge border text-dark rounded-pill fw-normal px-2">${wb.serviceCategory}</span></td>
+                            <td>${wb.origin} - ${wb.destination}</td>
+                            <td><span class="badge ${wb.movementType === 'Arrival' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} rounded-1 px-2 py-1">${wb.movementType}</span></td>
+                            <td>${wb.origin}</td>
+                            <td>${wb.destination}</td>
+                            <td class="pe-4 text-end"><span class="badge bg-light text-dark">${wb.depot_id}</span></td>
+                        `;
+                        resultsTableBody.appendChild(tr);
+                    });
+                }
+
+                // Scroll to results
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } else {
+                alert('Search failed: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error searching records:', error);
+            alert('An error occurred during search.');
+        } finally {
+            btn.innerHTML = originalBtnContent;
+            btn.disabled = false;
+        }
+    });
+}
