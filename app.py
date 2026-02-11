@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from flask_pymongo import PyMongo
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 load_dotenv()
@@ -39,33 +39,51 @@ def login():
 
         # Find user in DB
         try:
-            print(f"DEBUG: Querying database for user: {station_master_id} in depot: {depot_id}")
-            user = mongo.db.depots.find_one({
-                "depot_id": depot_id, 
-                "station_master_id": station_master_id
+            print(f"DEBUG: Querying database for user: {station_master_id}")
+            # Query by stationMasterId (case-insensitive)
+            # We ignore depotId in the query for flexibility, trusting unique SM ID
+            user = mongo.db.users.find_one({
+                "stationMasterId": {"$regex": f"^{station_master_id}$", "$options": "i"}
             })
             print(f"DEBUG: Query result: {'User found' if user else 'User NOT found'}")
         except Exception as e:
             print(f"ERROR: Database query failed: {str(e)}")
             return jsonify({"status": "error", "message": f"Database error: {str(e)}"}), 500
 
-        if user and user['password'] == password:
-            # Create session
-            session['user'] = {
-                "depot_id": user['depot_id'],
-                "station_master_id": user['station_master_id'],
-                "depot_name": user['depot_name'],
-                "platforms": user.get('platforms', [])
-            }
-            print(f"DEBUG: Login successful for {station_master_id}, session created with platforms: {user.get('platforms', [])}")
-            return jsonify({
-                "status": "success", 
-                "message": "Login successful",
-                "depot_name": user['depot_name'],
-                "platforms": user.get('platforms', [])
-            }), 200
+        if user:
+            # STRICT CHECK: Ensure the Station Master belongs to the selected Depot
+            db_depot_id = user.get('depotId')
+            if db_depot_id != depot_id:
+                print(f"DEBUG: Depot Mismatch! User belongs to {db_depot_id} but tried to login to {depot_id}")
+                return jsonify({"status": "error", "message": f"This Station Master ID belongs to {db_depot_id}, not {depot_id}. Please select the correct depot."}), 401
+
+            if user.get('password') == password:
+                # Generate platforms list if platform_count exists
+                platforms = []
+                if 'platform_count' in user:
+                   platforms = list(range(1, int(user['platform_count']) + 1))
+                elif 'platforms' in user:
+                   platforms = user['platforms']
+                
+                # Create session
+                session['user'] = {
+                    "depot_id": user.get('depotId'),
+                    "station_master_id": user.get('stationMasterId'),
+                    "depot_name": user.get('name'),
+                    "platforms": platforms
+                }
+                print(f"DEBUG: Login successful for {station_master_id} at {depot_id}. Session created.")
+                return jsonify({
+                    "status": "success", 
+                    "message": "Login successful",
+                    "depot_name": user.get('name'),
+                    "platforms": platforms
+                }), 200
+            else:
+                print("DEBUG: Invalid password.")
+                return jsonify({"status": "error", "message": "Invalid credentials"}), 401
         else:
-            print("DEBUG: Invalid credentials.")
+            print("DEBUG: User not found.")
             return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
     return render_template('login.html')
@@ -98,7 +116,7 @@ def save_waybill():
                 {"$set": {
                     "bus_reg_no": bus_reg_no,
                     "service_category": data.get('serviceCategory'),
-                    "last_updated": datetime.utcnow()
+                    "last_updated": datetime.now()
                 }},
                 upsert=True
             )
@@ -112,7 +130,7 @@ def save_waybill():
                     "name": data.get('conductorName'),
                     "phone": data.get('conductorPhone'),
                     "role": "Conductor",
-                    "last_updated": datetime.utcnow()
+                    "last_updated": datetime.now()
                 }},
                 upsert=True
             )
@@ -126,14 +144,22 @@ def save_waybill():
                     "name": data.get('driverName'),
                     "phone": data.get('driverPhone'),
                     "role": "Driver",
-                    "last_updated": datetime.utcnow()
+                    "last_updated": datetime.now()
                 }},
                 upsert=True
             )
 
         # 4. Save Waybill Record
         waybill_record = data.copy()
-        waybill_record['timestamp'] = datetime.utcnow()
+        
+        # Ensure platformNumber is stored as an integer for consistent comparison
+        if 'platformNumber' in waybill_record and waybill_record['platformNumber']:
+            try:
+                waybill_record['platformNumber'] = int(waybill_record['platformNumber'])
+            except ValueError:
+                pass # Keep as string if conversion fails check
+
+        waybill_record['timestamp'] = datetime.now()
         # Add session user info if logged in
         if 'user' in session:
             waybill_record['logged_by'] = session['user']['station_master_id']
@@ -158,12 +184,18 @@ def get_live_data():
         
         # Fetch waybills where this depot is the source OR the destination
         # We check destination against both depot_id and depot_name for robustness
+        # Strict Isolation: Only show waybills created BY this depot
+        # The user said "data is duplicated in all depos", implying they don't want to see incoming buses yet, 
+        # or the generic destination matching was too broad. 
+        # let's restrict to just records logged at this depot for now to solve the "duplication".
+        # Strict Isolation: Only show waybills created BY this depot
+        # LIMIT: Only show content for the CURRENT DAY (Resets at midnight)
+        now = datetime.now()
+        start_of_day = datetime(now.year, now.month, now.day, 0, 0, 0)
+        
         query = {
-            "$or": [
-                {"depot_id": depot_id},
-                {"destination": depot_id},
-                {"destination": depot_name}
-            ]
+            "depot_id": depot_id,
+            "timestamp": {"$gte": start_of_day}
         }
         
         cursor = mongo.db.waybills.find(query).sort("timestamp", -1)
@@ -303,7 +335,15 @@ def search_records():
                 "actualTime": wb.get('actualTime', ''),
                 "movementType": wb.get('movementType', ''),
                 "depot_id": wb.get('depot_id', ''),
-                "timestamp": wb.get('timestamp').strftime("%Y-%m-%d %H:%M") if wb.get('timestamp') else ''
+                "timestamp": wb.get('timestamp').strftime("%Y-%m-%d %H:%M") if wb.get('timestamp') else '',
+                # Crew Details
+                "conductorName": wb.get('conductorName', '-'),
+                "conductorId": wb.get('conductorId', '-'),
+                "driverName": wb.get('driverName', '-'),
+                "driverId": wb.get('driverId', '-'),
+                # Explicit Arrival/Departure for clarity in search
+                "arrival_time": wb.get('actualTime') if wb.get('movementType') == 'Arrival' else '-',
+                "departure_time": wb.get('actualTime') if wb.get('movementType') == 'Departure' else '-'
             }
             data_list.append(item)
             
@@ -381,6 +421,51 @@ def test_db():
         return jsonify({"status": "success", "message": "Connected to MongoDB!"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/search/bus', methods=['GET'])
+def search_bus():
+    if 'user' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+
+    results = mongo.db.buses.find(
+        {"bus_reg_no": {"$regex": query, "$options": "i"}},
+        {"_id": 0, "bus_reg_no": 1, "service_category": 1}
+    ).limit(10)
+    
+    return jsonify(list(results))
+
+@app.route('/api/search/place', methods=['GET'])
+def search_place():
+    if 'user' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+
+    # Search in places collection
+    results = mongo.db.places.find(
+        {"name": {"$regex": query, "$options": "i"}},
+        {"_id": 0, "name": 1, "code": 1}
+    ).limit(10)
+    
+    return jsonify(list(results))
+
+@app.route('/api/crew/<crew_id>', methods=['GET'])
+def get_crew_details(crew_id):
+    if 'user' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    crew = mongo.db.crew.find_one({"crew_id": crew_id}, {"_id": 0})
+    
+    if crew:
+        return jsonify({"status": "success", "crew": crew})
+    else:
+        return jsonify({"status": "error", "message": "Crew not found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

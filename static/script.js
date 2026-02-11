@@ -61,7 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!session && !isLoginPage) {
             window.location.href = 'login.html';
         } else if (session && isLoginPage) {
+            // OPTIONAL: Auto-redirect to index is annoying if experimenting. 
+            // Let's allow staying on login page if needed, but safer to redirect.
             window.location.href = 'index.html';
+        }
+
+        // CORRECTION: If we are on login.html, we should ensure no ghost session exists 
+        // to prevent confusion when user logs in with new creds.
+        if (isLoginPage) {
+            sessionStorage.removeItem(AUTH_KEY);
         }
 
         // Update Depot Display if on index page
@@ -112,7 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Logout Handler
-    window.logout = function () {
+    window.logout = async function () {
+        try {
+            await fetch('/logout', { method: 'POST' });
+        } catch (e) {
+            console.error('Logout failed', e);
+        }
         sessionStorage.removeItem(AUTH_KEY);
         window.location.href = 'login.html';
     };
@@ -179,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isGlobalSearchActive) {
             console.log('DEBUG: Auto-refreshing dashboard...');
             updateDashboard();
-            updateMasterLog();
+            // updateMasterLog(); // DISABLED per user request (User wants manual refresh only for logs)
         }
     }, 10000);
 });
@@ -307,6 +320,115 @@ if (waybillForm) {
     }
 
     updateActualTime();
+
+    // --- Autocomplete & Autofill Logic ---
+
+    // Generic Debounce Function
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Custom Autocomplete Helper
+    function setupAutocomplete(inputId, listId, url, displayKey, onSelect) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+
+        if (!input || !list) return;
+
+        input.addEventListener('input', debounce(async (e) => {
+            const query = e.target.value;
+            if (query.length < 1) {
+                list.classList.add('d-none');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${url}?q=${encodeURIComponent(query)}`);
+                const results = await res.json();
+
+                list.innerHTML = '';
+
+                if (results.length > 0) {
+                    list.classList.remove('d-none');
+                    results.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item list-group-item-action cursor-pointer';
+                        li.textContent = item[displayKey]; // Dynamic key based on API
+                        li.style.cursor = 'pointer';
+
+                        li.addEventListener('click', () => {
+                            input.value = item[displayKey];
+                            list.classList.add('d-none');
+                            if (onSelect) onSelect(item);
+                        });
+
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.classList.add('d-none');
+                }
+            } catch (err) {
+                console.error('Autocomplete error:', err);
+            }
+        }, 300));
+
+        // Hide on click outside
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.classList.add('d-none');
+            }
+        });
+    }
+
+    // Initialize Autocompletes
+    setupAutocomplete('busRegInput', 'busSuggestions', '/api/search/bus', 'bus_reg_no', (item) => {
+        // Optional: Autofill service category if we want
+        // const categorySelect = waybillForm.querySelector('select[name="serviceCategory"]');
+        // if(categorySelect && item.service_category) categorySelect.value = item.service_category;
+    });
+
+    setupAutocomplete('originInput', 'originSuggestions', '/api/search/place', 'name');
+    setupAutocomplete('destInput', 'destSuggestions', '/api/search/place', 'name');
+    setupAutocomplete('viaInput', 'viaSuggestions', '/api/search/place', 'name');
+
+
+    // Crew Autofill
+    async function autofillCrew(role, idInputName, nameInputName, phoneInputName) {
+        const idInput = waybillForm.querySelector(`input[name="${idInputName}"]`);
+        const nameInput = waybillForm.querySelector(`input[name="${nameInputName}"]`);
+        const phoneInput = waybillForm.querySelector(`input[name="${phoneInputName}"]`);
+
+        if (idInput) {
+            idInput.addEventListener('change', async () => { // Or blur
+                const id = idInput.value;
+                if (!id) return;
+
+                try {
+                    const res = await fetch(`/api/crew/${id}`);
+                    const data = await res.json();
+
+                    if (data.status === 'success' && data.crew) {
+                        if (nameInput) nameInput.value = data.crew.name || '';
+                        if (phoneInput) phoneInput.value = data.crew.phone || '';
+                    } else {
+                        // Optional: Clear if invalid? Or leave as is?
+                        // console.warn('Crew not found');
+                    }
+                } catch (err) {
+                    console.error('Crew fetch error:', err);
+                }
+            });
+        }
+    }
+
+    autofillCrew('Conductor', 'conductorId', 'conductorName', 'conductorPhone');
+    autofillCrew('Driver', 'driverId', 'driverName', 'driverPhone');
+
+    // --- End Autocomplete Logic ---
 
     waybillForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -475,7 +597,8 @@ function updatePlatforms(waybills) {
 
     platforms.forEach(pf => {
         // Find most recent waybill for this platform
-        const latestWaybill = waybills.find(wb => wb.platformNumber === pf);
+        // Use loose equality (==) to handle String/Number mismatch (e.g. "1" vs 1)
+        const latestWaybill = waybills.find(wb => wb.platformNumber == pf);
 
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.card');
@@ -564,13 +687,16 @@ if (busSearchForm) {
                     data.waybills.forEach(wb => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td class="ps-4 fw-medium">${wb.timestamp}</td>
+                            <td class="ps-4 fw-medium">${wb.timestamp.split(' ')[0]}</td>
                             <td class="fw-bold">${wb.busRegNo}</td>
                             <td><span class="badge border text-dark rounded-pill fw-normal px-2">${wb.serviceCategory}</span></td>
                             <td>${wb.origin} - ${wb.destination}</td>
-                            <td><span class="badge ${wb.movementType === 'Arrival' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} rounded-1 px-2 py-1">${wb.movementType}</span></td>
-                            <td>${wb.origin}</td>
-                            <td>${wb.destination}</td>
+                            <td class="${wb.arrival_time !== '-' ? 'text-success fw-bold' : 'text-muted'}">${wb.arrival_time}</td>
+                            <td class="${wb.departure_time !== '-' ? 'text-danger fw-bold' : 'text-muted'}">${wb.departure_time}</td>
+                            <td>
+                                <div class="small">C: ${wb.conductorName} <span class="text-muted">(${wb.conductorId})</span></div>
+                                <div class="small">D: ${wb.driverName} <span class="text-muted">(${wb.driverId})</span></div>
+                            </td>
                             <td class="pe-4 text-end"><span class="badge bg-light text-dark">${wb.depot_id}</span></td>
                         `;
                         resultsTableBody.appendChild(tr);

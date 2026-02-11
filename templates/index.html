@@ -337,12 +337,14 @@
 
                             <form id="waybillForm">
                                 <div class="row g-4">
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 position-relative">
                                         <label class="form-label text-uppercase small fw-bold text-secondary">Bus
                                             Registration Number</label>
-                                        <input type="text" id="busRegNo" name="busRegNo"
+                                        <input type="text" id="busRegInput" name="busRegNo"
                                             class="form-control form-control-lg bg-light border-0"
-                                            placeholder="KL-15-A-1234" required>
+                                            placeholder="KL-15-A-1234" autocomplete="off" required>
+                                        <ul class="list-group position-absolute w-100 z-3 shadow mt-1 d-none"
+                                            id="busSuggestions" style="max-height: 200px; overflow-y: auto;"></ul>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label text-uppercase small fw-bold text-secondary">Service
@@ -377,26 +379,32 @@
                                         </style>
                                     </div>
 
-                                    <div class="col-md-3">
+                                    <div class="col-md-3 position-relative">
                                         <label
                                             class="form-label text-uppercase small fw-bold text-secondary">Origin</label>
-                                        <input type="text" id="origin" name="origin"
+                                        <input type="text" id="originInput" name="origin"
                                             class="form-control form-control-lg bg-light border-0" placeholder="From"
-                                            required>
+                                            autocomplete="off" required>
+                                        <ul class="list-group position-absolute w-100 z-3 shadow mt-1 d-none"
+                                            id="originSuggestions" style="max-height: 200px; overflow-y: auto;"></ul>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-3 position-relative">
                                         <label
                                             class="form-label text-uppercase small fw-bold text-secondary">Destination</label>
-                                        <input type="text" id="destination" name="destination"
+                                        <input type="text" id="destInput" name="destination"
                                             class="form-control form-control-lg bg-light border-0" placeholder="To"
-                                            required>
+                                            autocomplete="off" required>
+                                        <ul class="list-group position-absolute w-100 z-3 shadow mt-1 d-none"
+                                            id="destSuggestions" style="max-height: 200px; overflow-y: auto;"></ul>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 position-relative">
                                         <label class="form-label text-uppercase small fw-bold text-secondary">Via
                                             Route</label>
-                                        <input type="text" id="viaRoute" name="viaRoute"
+                                        <input type="text" id="viaInput" name="viaRoute"
                                             class="form-control form-control-lg bg-light border-0"
-                                            placeholder="Via Points" required>
+                                            placeholder="Via Points" autocomplete="off" required>
+                                        <ul class="list-group position-absolute w-100 z-3 shadow mt-1 d-none"
+                                            id="viaSuggestions" style="max-height: 200px; overflow-y: auto;"></ul>
                                     </div>
                                     <div class="col-md-2">
                                         <label
@@ -510,16 +518,109 @@
                                     <select class="form-select form-select-lg bg-light border-0"
                                         id="historySearchDepot">
                                         <option value="">All Depots</option>
-                                        <option value="TVM">TVM</option>
-                                        <option value="KML">KML</option>
-                                        <option value="ALP">ALP</option>
-                                        <option value="KTYM">KTYM</option>
-                                        <option value="ERS">ERS</option>
-                                        <option value="TSR">TSR</option>
-                                        <option value="PGT">PGT</option>
-                                        <option value="KKD">KKD</option>
-                                        <option value="KNR">KNR</option>
-                                        <option value="KGD">KGD</option>
+                                        <!-- Thiruvananthapuram -->
+                                        <option value="TVM">Thiruvananthapuram Central</option>
+                                        <option value="CTY">Thiruvananthapuram City</option>
+                                        <option value="PPD">Pappanamcode</option>
+                                        <option value="VZM">Vizhinjam</option>
+                                        <option value="NDD">Nedumangad</option>
+                                        <option value="NTA">Neyyattinkara</option>
+                                        <option value="ATL">Attingal</option>
+                                        <option value="VJR">Vellarada</option>
+                                        <option value="PRS">Parassala</option>
+                                        <option value="KZM">Kazhakkuttam</option>
+
+                                        <!-- Kollam -->
+                                        <option value="KLM">Kollam</option>
+                                        <option value="KTR">Kottarakkara</option>
+                                        <option value="KPN">Karunagappally</option>
+                                        <option value="PVR">Punalur</option>
+                                        <option value="CHT">Chadayamangalam</option>
+                                        <option value="PYR">Pathanapuram</option>
+                                        <option value="ARY">Aryankavu</option>
+
+                                        <!-- Pathanamthitta -->
+                                        <option value="PTA">Pathanamthitta</option>
+                                        <option value="ADOOR">Adoor</option>
+                                        <option value="TVL">Thiruvalla</option>
+                                        <option value="RNI">Ranni</option>
+                                        <option value="KNI">Konni</option>
+                                        <option value="MDY">Mallappally</option>
+
+                                        <!-- Alappuzha -->
+                                        <option value="ALP">Alappuzha</option>
+                                        <option value="CGR">Chengannur</option>
+                                        <option value="KYM">Kayamkulam</option>
+                                        <option value="CTL">Cherthala</option>
+                                        <option value="HRD">Haripad</option>
+                                        <option value="MVK">Mavelikkara</option>
+                                        <option value="EDY">Edathua</option>
+
+                                        <!-- Kottayam -->
+                                        <option value="KTYM">Kottayam</option>
+                                        <option value="CHR">Changanassery</option>
+                                        <option value="PLA">Pala</option>
+                                        <option value="ETP">Erattupetta</option>
+                                        <option value="VKP">Vaikom</option>
+                                        <option value="PNK">Ponkunnam</option>
+
+                                        <!-- Idukki -->
+                                        <option value="TDP">Thodupuzha</option>
+                                        <option value="KML">Kumily</option>
+                                        <option value="MNR">Munnar</option>
+                                        <option value="KTP">Kattappana</option>
+                                        <option value="NQM">Nedumkandam</option>
+
+                                        <!-- Ernakulam -->
+                                        <option value="ERS">Ernakulam</option>
+                                        <option value="ALY">Aluva</option>
+                                        <option value="PBR">Perumbavoor</option>
+                                        <option value="MVP">Muvattupuzha</option>
+                                        <option value="KTMG">Kothamangalam</option>
+                                        <option value="NPT">North Paravur</option>
+                                        <option value="ANG">Angamaly</option>
+                                        <option value="PVR">Piravom</option>
+                                        <option value="KTR">Koothattukulam</option>
+
+                                        <!-- Thrissur -->
+                                        <option value="TSR">Thrissur</option>
+                                        <option value="CKD">Chalakudy</option>
+                                        <option value="IJK">Irinjalakuda</option>
+                                        <option value="KDG">Kodungallur</option>
+                                        <option value="GVY">Guruvayoor</option>
+                                        <option value="MKD">Mala</option>
+
+                                        <!-- Palakkad -->
+                                        <option value="PGT">Palakkad</option>
+                                        <option value="PLK">Palakkad (Alt)</option>
+                                        <option value="CHT">Chittur</option>
+                                        <option value="MNR">Mannarkkad</option>
+                                        <option value="VDR">Vadakkencherry</option>
+
+                                        <!-- Malappuram -->
+                                        <option value="MPM">Malappuram</option>
+                                        <option value="PMN">Perinthalmanna</option>
+                                        <option value="NNM">Nilambur</option>
+                                        <option value="PNI">Ponnani</option>
+
+                                        <!-- Kozhikode -->
+                                        <option value="KKD">Kozhikode</option>
+                                        <option value="TAM">Thamarassery</option>
+                                        <option value="VDK">Vadakara</option>
+
+                                        <!-- Wayanad -->
+                                        <option value="SBY">Sulthan Bathery</option>
+                                        <option value="KPT">Kalpetta</option>
+                                        <option value="MDY">Mananthavady</option>
+
+                                        <!-- Kannur -->
+                                        <option value="KNR">Kannur</option>
+                                        <option value="TLY">Thalassery</option>
+                                        <option value="PAY">Payyannur</option>
+
+                                        <!-- Kasaragod -->
+                                        <option value="KGD">Kasaragod</option>
+                                        <option value="KJN">Kanhangad</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -550,13 +651,13 @@
                                     <table class="table table-hover align-middle mb-0" id="historyResultsTable">
                                         <thead class="bg-light text-secondary text-uppercase small">
                                             <tr>
-                                                <th class="ps-4">Date/Time</th>
+                                                <th class="ps-4">Date</th>
                                                 <th>Bus No</th>
                                                 <th>Service</th>
                                                 <th>Route</th>
-                                                <th>Type</th>
-                                                <th>Origin</th>
-                                                <th>Destination</th>
+                                                <th>Arr. Time</th>
+                                                <th>Dep. Time</th>
+                                                <th>Crew (C/D)</th>
                                                 <th class="pe-4 text-end">Depot</th>
                                             </tr>
                                         </thead>
