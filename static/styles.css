@@ -19,58 +19,182 @@ body {
     /* absolute path from web root might be safer if relative resolution is weird */
     background-image: url('/static/dashboard_background.png');
     background-size: cover;
-    background-attachment: scroll;
-    /* Performance fix: fixed background causes high repaint cost */
+    background-attachment: fixed;
     background-position: center;
     background-repeat: no-repeat;
 }
 
-/* ... (Skipping unchanged tabs styling) ... */
+/* Custom Navigation Tabs Styling */
+.nav-tabs .nav-link {
+    color: var(--text-secondary);
+    transition: color 0.2s ease-in-out;
+}
 
-/* Card Styling - High End 4D Effects (Optimized) */
+.nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--danger-color) !important;
+    /* Red accent for active tab as per screenshot */
+    background: transparent !important;
+}
+
+/* Custom Active Indicator */
+.nav-link .active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--danger-color);
+    transform: scaleX(0);
+    transition: transform 0.2s ease-in-out;
+    transform-origin: left;
+}
+
+.nav-link.active .active-indicator {
+    transform: scaleX(1);
+}
+
+/* Card Styling - High End 4D Effects */
 .card {
     border: 1px solid var(--border-color);
     border-radius: 16px;
+    /* Slightly more rounded */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
-    /* Performance fix: specific properties instead of 'all' */
-    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1),
-        box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1),
-        background-color 0.3s ease,
-        color 0.3s ease,
-        border-color 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    /* Smooth 'Apple-like' ease */
     position: relative;
     overflow: hidden;
     background: var(--card-bg);
     z-index: 1;
-    will-change: transform;
-    /* Hint to browser to promote layer */
 }
 
 .card:hover {
-    transform: translateY(-5px) scale(1.01);
-    /* Reduced movement slightly */
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-    /* Reduced shadow spread/blur for perf */
+    transform: translateY(-8px) scale(1.015);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    /* Stronger shadow */
     border-color: rgba(255, 255, 255, 0.1);
     background-color: #2b3035;
+    /* Dark background */
     color: #ffffff;
 }
 
-/* ... (Skipping text color overrides) ... */
+/* Ensure text readability on dark hover */
+.card:hover .text-muted,
+.card:hover .text-secondary {
+    color: #aeb0b5 !important;
+}
+
+.card:hover .text-dark,
+.card:hover h2,
+.card:hover h5,
+.card:hover h6 {
+    color: #ffffff !important;
+}
+
+.card:hover .bi {
+    color: #ffffff !important;
+    /* Make icons white */
+}
+
+/* Optional: Subtle gradient overlay on hover */
+.card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+}
+
+.card:hover::after {
+    opacity: 1;
+}
+
+/* Utility Overrides */
+.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.text-small {
+    font-size: 0.875rem;
+}
+
+/* Platform Section Enhancements */
+#platformsContainer {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2rem;
+    /* More space for shadow */
+    gap: 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--border-color);
+    -webkit-overflow-scrolling: touch;
+    padding-top: 10px;
+    /* Space for hover lift */
+}
+
+#platformsContainer::-webkit-scrollbar {
+    height: 6px;
+}
+
+#platformsContainer::-webkit-scrollbar-track {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+#platformsContainer::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+.platform-card {
+    flex: 0 0 280px;
+    /* Fixed width for scrolling consistency */
+    /* Styling handled by .card now, but we can add specific overrides if needed */
+}
+
+/* Platform Status Colors */
+.card.pf-occupied {
+    border-top: 4px solid var(--success-color) !important;
+}
+
+.card.pf-empty {
+    border-top: 4px solid var(--secondary-color) !important;
+    background-color: #fcfcfc;
+    opacity: 0.9;
+}
+
+.pf-status-occupied {
+    color: var(--success-color);
+}
+
+.pf-status-empty {
+    color: var(--secondary-color);
+}
 
 /* Animations */
 @keyframes pulse {
     0% {
         transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4);
     }
 
-    50% {
-        transform: scale(1.03);
-        /* slightly smaller scale */
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(25, 135, 84, 0);
     }
 
     100% {
         transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
     }
 }
 
