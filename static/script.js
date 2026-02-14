@@ -695,7 +695,9 @@ if (busSearchForm) {
                             <td class="${wb.departure_time !== '-' ? 'text-danger fw-bold' : 'text-muted'}">${wb.departure_time}</td>
                             <td>
                                 <div class="small">C: ${wb.conductorName} <span class="text-muted">(${wb.conductorId})</span></div>
-                                <div class="small">D: ${wb.driverName} <span class="text-muted">(${wb.driverId})</span></div>
+                                <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-telephone"></i> ${wb.conductorPhone || '-'}</div>
+                                <div class="small mt-1">D: ${wb.driverName} <span class="text-muted">(${wb.driverId})</span></div>
+                                <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-telephone"></i> ${wb.driverPhone || '-'}</div>
                             </td>
                             <td class="pe-4 text-end"><span class="badge bg-light text-dark">${wb.depot_id}</span></td>
                         `;

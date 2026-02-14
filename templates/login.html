@@ -33,7 +33,11 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
+            background-image: url("{{ url_for('static', filename='login_bg.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             height: 100vh;
             display: flex;
             align-items: center;

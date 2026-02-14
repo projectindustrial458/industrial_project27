@@ -343,7 +343,9 @@ def search_records():
                 "driverId": wb.get('driverId', '-'),
                 # Explicit Arrival/Departure for clarity in search
                 "arrival_time": wb.get('actualTime') if wb.get('movementType') == 'Arrival' else '-',
-                "departure_time": wb.get('actualTime') if wb.get('movementType') == 'Departure' else '-'
+                "departure_time": wb.get('actualTime') if wb.get('movementType') == 'Departure' else '-',
+                "conductorPhone": wb.get('conductorPhone', ''),
+                "driverPhone": wb.get('driverPhone', '')
             }
             data_list.append(item)
             

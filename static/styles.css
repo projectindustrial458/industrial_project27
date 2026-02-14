@@ -11,10 +11,17 @@
     --border-color: #e9ecef;
 }
 
+/* Body Background */
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--body-bg);
     color: var(--text-primary);
+    /* absolute path from web root might be safer if relative resolution is weird */
+    background-image: url('/static/dashboard_background.png');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 /* Custom Navigation Tabs Styling */
@@ -28,7 +35,8 @@ body {
 }
 
 .nav-tabs .nav-link.active {
-    color: var(--danger-color) !important; /* Red accent for active tab as per screenshot */
+    color: var(--danger-color) !important;
+    /* Red accent for active tab as per screenshot */
     background: transparent !important;
 }
 
@@ -49,17 +57,64 @@ body {
     transform: scaleX(1);
 }
 
-/* Card Styling */
+/* Card Styling - High End 4D Effects */
 .card {
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 16px;
+    /* Slightly more rounded */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    /* Smooth 'Apple-like' ease */
+    position: relative;
+    overflow: hidden;
+    background: var(--card-bg);
+    z-index: 1;
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transform: translateY(-8px) scale(1.015);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    /* Stronger shadow */
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: #2b3035;
+    /* Dark background */
+    color: #ffffff;
+}
+
+/* Ensure text readability on dark hover */
+.card:hover .text-muted,
+.card:hover .text-secondary {
+    color: #aeb0b5 !important;
+}
+
+.card:hover .text-dark,
+.card:hover h2,
+.card:hover h5,
+.card:hover h6 {
+    color: #ffffff !important;
+}
+
+.card:hover .bi {
+    color: #ffffff !important;
+    /* Make icons white */
+}
+
+/* Optional: Subtle gradient overlay on hover */
+.card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+}
+
+.card:hover::after {
+    opacity: 1;
 }
 
 /* Utility Overrides */
@@ -76,11 +131,14 @@ body {
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 1rem;
+    padding-bottom: 2rem;
+    /* More space for shadow */
     gap: 1.5rem;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) var(--border-color);
     -webkit-overflow-scrolling: touch;
+    padding-top: 10px;
+    /* Space for hover lift */
 }
 
 #platformsContainer::-webkit-scrollbar {
@@ -98,12 +156,9 @@ body {
 }
 
 .platform-card {
-    flex: 0 0 280px; /* Fixed width for scrolling consistency */
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.platform-card:hover {
-    transform: translateY(-5px) scale(1.02);
+    flex: 0 0 280px;
+    /* Fixed width for scrolling consistency */
+    /* Styling handled by .card now, but we can add specific overrides if needed */
 }
 
 /* Platform Status Colors */
@@ -114,7 +169,7 @@ body {
 .card.pf-empty {
     border-top: 4px solid var(--secondary-color) !important;
     background-color: #fcfcfc;
-    opacity: 0.8;
+    opacity: 0.9;
 }
 
 .pf-status-occupied {
@@ -127,11 +182,37 @@ body {
 
 /* Animations */
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(25, 135, 84, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+    }
 }
 
 .bus-active {
     animation: pulse 2s infinite ease-in-out;
+}
+
+/* Tab Transitions - Slide Up Effect */
+/* Tab Transitions - Slide Up Effect */
+/* Apply transitions only to .tab-pane.fade to enhance Bootstrap's fade */
+.tab-pane.fade {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Active/Show state */
+.tab-pane.fade.show {
+    opacity: 1;
+    transform: translateY(0);
 }
