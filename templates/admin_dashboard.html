@@ -1,0 +1,615 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Console - Dashboard</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            /* Light Theme */
+            color: #212529;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #ffffff;
+            /* Light Sidebar */
+            border-right: 1px solid #dee2e6;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            padding: 1.5rem;
+            z-index: 1000;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .nav-link {
+            color: #6c757d;
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.2rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #e9ecef;
+            color: #0d6efd;
+        }
+
+        .nav-link.active {
+            background-color: #e7f1ff;
+            color: #0d6efd;
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .table {
+            color: #212529;
+        }
+
+        /* Light table styles */
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            color: #212529;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: #ffffff;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        /* Json Editor specific */
+        textarea.code-block {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column">
+        <div class="mb-4">
+            <h5 class="fw-bold text-dark"><i class="bi bi-terminal-fill text-primary me-2"></i>DevConsole</h5>
+            <p class="text-secondary small mb-0">v1.3.0 • Light Theme</p>
+        </div>
+
+        <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="showSection('analytics')">
+                    <i class="bi bi-graph-up me-2"></i> Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('data-manager')">
+                    <i class="bi bi-database me-2"></i> Data Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('upload')">
+                    <i class="bi bi-cloud-upload me-2"></i> CSV Upload
+                </a>
+            </li>
+        </ul>
+
+        <div class="mt-auto pt-3 border-top">
+            <div class="d-flex align-items-center mb-3">
+                <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-2"
+                    style="width: 32px; height: 32px;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 text-dark">Administrator</h6>
+                    <small class="text-secondary">System Root</small>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm w-100">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Analytics Section -->
+        <div id="analytics" class="content-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-dark">System Analytics</h2>
+                <div class="d-flex gap-2">
+                    <select class="form-select w-auto" id="chartTypeSelect" onchange="updateChartType()">
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="doughnut">Doughnut Chart</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card p-3 border-0 shadow-sm">
+                        <small class="text-secondary text-uppercase fw-bold">Total Collections</small>
+                        <h2 class="fw-bold my-2 text-primary" id="totalCollections">-</h2>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-primary" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Add more stat cards here dynamically if needed -->
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="card p-4 border-0 shadow-sm">
+                        <h5 class="fw-bold mb-3">Database Distribution</h5>
+                        <canvas id="dbChart" style="max-height: 400px;"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 h-100 border-0 shadow-sm">
+                        <h5 class="fw-bold mb-3">System Health</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-3 d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                <span><i class="bi bi-hdd-network me-2 text-success"></i> MongoDB</span>
+                                <span class="badge bg-success-subtle text-success border border-success">Online</span>
+                            </li>
+                            <li class="mb-3 d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                <span><i class="bi bi-cpu me-2 text-primary"></i> Latency</span>
+                                <span class="fw-bold">~45ms</span>
+                            </li>
+                            <li class="mb-3 d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                <span><i class="bi bi-shield-check me-2 text-warning"></i> Security</span>
+                                <span class="badge bg-warning-subtle text-warning border border-warning">Active</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Manager Section -->
+        <div id="data-manager" class="content-section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-dark">Data Manager</h2>
+                <button class="btn btn-primary btn-sm shadow-sm" onclick="showAddModal()">
+                    <i class="bi bi-plus-lg me-2"></i>Add Document
+                </button>
+            </div>
+
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-auto">
+                            <label class="col-form-label text-secondary fw-bold">Collection:</label>
+                        </div>
+                        <div class="col-auto">
+                            <select class="form-select form-select-sm" id="collectionSelect"
+                                onchange="loadCollectionData()">
+                                <option selected disabled>Choose collection...</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i
+                                        class="bi bi-search text-secondary"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-0"
+                                    placeholder="Search by ID..." id="searchData">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle w-100" id="dataTable">
+                        <thead class="table-light">
+                            <tr id="tableHeader">
+                                <th>ID</th>
+                                <th>Data Preview</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="upload" class="content-section d-none">
+            <h2 class="fw-bold mb-4 text-dark">Bulk Data Import</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card p-5 text-center border-0 shadow-sm">
+                        <div class="mb-4">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center"
+                                style="width: 80px; height: 80px;">
+                                <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+                            </div>
+                        </div>
+                        <h4 class="fw-bold">Upload CSV File</h4>
+                        <p class="text-secondary">Drag and drop your CSV file here, or click to browse.</p>
+
+                        <div class="mb-4 text-start mx-auto" style="max-width: 400px;">
+                            <label class="form-label small text-uppercase fw-bold text-secondary">Target
+                                Collection</label>
+                            <select class="form-select mb-3" id="uploadCollectionSelect">
+                                <option selected disabled>Select Collection...</option>
+                            </select>
+
+                            <label class="form-label small text-uppercase fw-bold text-secondary">CSV File</label>
+                            <input class="form-control" type="file" id="csvFile" accept=".csv">
+                        </div>
+
+                        <button class="btn btn-primary px-4 py-2" onclick="uploadCSV()">
+                            <i class="bi bi-check-lg me-2"></i>Start Import
+                        </button>
+
+                        <div id="uploadStatus" class="mt-4 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Edit/Add Modal -->
+    <div class="modal fade" id="dataModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Document Editor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-secondary">JSON Payload</label>
+                        <textarea class="form-control code-block" id="jsonData" rows="12"></textarea>
+                        <div class="form-text">Ensure valid JSON syntax before saving.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveData()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Navigation ---
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.add('d-none'));
+            document.getElementById(sectionId).classList.remove('d-none');
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            if (sectionId === 'analytics') loadStats();
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+        });
+
+        // --- Analytics (Enhanced) ---
+        let dbChartInstance = null;
+        let chartDataCache = null;
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const data = await response.json();
+                chartDataCache = data; // Store for chart type switching
+
+                document.getElementById('totalCollections').innerText = data.collections.length;
+
+                // Populate Collection Selects
+                const selects = ['collectionSelect', 'uploadCollectionSelect'];
+                selects.forEach(id => {
+                    const sel = document.getElementById(id);
+                    // Keep selected value if re-loading
+                    const currentVal = sel.value;
+                    sel.innerHTML = '<option selected disabled>Choose collection...</option>';
+                    data.collections.forEach(col => {
+                        sel.innerHTML += `<option value="${col}">${col}</option>`;
+                    });
+                    if (currentVal && data.collections.includes(currentVal)) sel.value = currentVal;
+                });
+
+                renderChart('bar');
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function updateChartType() {
+            const type = document.getElementById('chartTypeSelect').value;
+            renderChart(type);
+        }
+
+        function renderChart(type) {
+            if (!chartDataCache) return;
+
+            const ctx = document.getElementById('dbChart').getContext('2d');
+            if (dbChartInstance) dbChartInstance.destroy();
+
+            const colors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'];
+
+            dbChartInstance = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: Object.keys(chartDataCache.counts),
+                    datasets: [{
+                        label: 'Document Count',
+                        data: Object.values(chartDataCache.counts),
+                        backgroundColor: type === 'line' ? '#0d6efd' : colors,
+                        borderColor: type === 'line' ? '#0d6efd' : '#ffffff',
+                        borderWidth: 2,
+                        borderRadius: type === 'bar' ? 4 : 0,
+                        tension: 0.3,
+                        fill: type === 'line'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: type !== 'bar'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            display: type === 'bar' || type === 'line'
+                        },
+                        x: {
+                            display: type === 'bar' || type === 'line'
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Data Manager (Dynamic Table) ---
+        async function loadCollectionData() {
+            const collection = document.getElementById('collectionSelect').value;
+            if (!collection) return;
+
+            try {
+                const response = await fetch(`/api/admin/data/${collection}`);
+                const data = await response.json();
+
+                const tableHead = document.querySelector('#dataTable thead tr');
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = '';
+                tableHead.innerHTML = '';
+
+                if (data.length === 0) {
+                    tableHead.innerHTML = '<th>No Data</th>';
+                    tableBody.innerHTML = '<tr><td class="text-center text-muted p-4">This collection is empty.</td></tr>';
+                    return;
+                }
+
+                // Dynamic Headers
+                // Get all unique keys from the first 5 documents to be safe
+                const keys = new Set();
+                keys.add('_id'); // Ensure ID is first
+                data.slice(0, 5).forEach(doc => Object.keys(doc).forEach(k => keys.add(k)));
+
+                const columns = Array.from(keys);
+
+                // Render Headers
+                columns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.innerText = col.toUpperCase();
+                    tableHead.appendChild(th);
+                });
+                // Actions Header
+                const thAction = document.createElement('th');
+                thAction.innerText = 'ACTIONS';
+                tableHead.appendChild(thAction);
+
+                // Render Rows
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+
+                    columns.forEach(col => {
+                        const td = document.createElement('td');
+                        let val = item[col];
+
+                        if (col === '_id') {
+                            td.innerHTML = `<span class="code-block text-primary small">${val}</span>`;
+                        } else if (typeof val === 'object' && val !== null) {
+                            td.innerText = '{...}'; // Simplify objects
+                            td.title = JSON.stringify(val);
+                        } else {
+                            // Truncate long strings
+                            const str = String(val);
+                            td.innerText = str.length > 30 ? str.substring(0, 30) + '...' : str;
+                        }
+                        tr.appendChild(td);
+                    });
+
+                    // Actions Column
+                    const tdAction = document.createElement('td');
+                    tdAction.className = 'text-nowrap';
+                    tdAction.innerHTML = `
+                        <button class="btn btn-sm btn-outline-primary border-0" onclick="editData('${item._id}', '${collection}')" title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteData('${item._id}', '${collection}')" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `;
+                    tr.appendChild(tdAction);
+
+                    tableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load data.');
+            }
+        }
+
+        // --- Edit/Add Data ---
+        let currentMode = 'edit';
+        let currentCollection = '';
+
+        function showAddModal() {
+            currentMode = 'add';
+            currentCollection = document.getElementById('collectionSelect').value;
+            if (!currentCollection) {
+                alert('Please select a collection first');
+                return;
+            }
+
+            document.getElementById('jsonData').value = '{\n  \n}';
+            const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+            modal.show();
+        }
+
+        async function editData(id, collection) {
+            currentMode = 'edit';
+            currentCollection = collection;
+
+            const response = await fetch(`/api/admin/data/${collection}`);
+            const data = await response.json();
+            const item = data.find(d => d._id === id);
+
+            document.getElementById('jsonData').value = JSON.stringify(item, null, 2);
+            const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+            modal.show();
+        }
+
+        async function saveData() {
+            const raw = document.getElementById('jsonData').value;
+            let payload;
+            try {
+                payload = JSON.parse(raw);
+            } catch (e) {
+                alert('Invalid JSON syntax');
+                return;
+            }
+
+            let url = `/api/admin/data/${currentCollection}`;
+            let method = currentMode === 'add' ? 'POST' : 'PUT';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('dataModal')).hide();
+                loadCollectionData();
+                loadStats();
+            } else {
+                const err = await response.json();
+                alert('Error saving data: ' + JSON.stringify(err));
+            }
+        }
+
+        async function deleteData(id, collection) {
+            if (!confirm('Are you sure? This cannot be undone.')) return;
+
+            const response = await fetch(`/api/admin/data/${collection}?id=${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadCollectionData();
+                loadStats();
+            } else {
+                alert('Error deleting data');
+            }
+        }
+
+        // --- Upload ---
+        async function uploadCSV() {
+            const collection = document.getElementById('uploadCollectionSelect').value;
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!collection || !file) {
+                alert('Please select a collection and a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.classList.remove('d-none');
+            statusDiv.innerHTML = '<div class="spinner-border text-primary spinner-border-sm"></div> Uploading...';
+
+            try {
+                const response = await fetch(`/api/admin/upload/${collection}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    statusDiv.innerHTML = `<div class="alert alert-success mt-2">Successfully inserted ${result.count} documents!</div>`;
+                    loadStats();
+                } else {
+                    statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Upload failed.</div>`;
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
+```
