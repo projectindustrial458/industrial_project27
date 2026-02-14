@@ -469,5 +469,124 @@ def get_crew_details(crew_id):
     else:
         return jsonify({"status": "error", "message": "Crew not found"}), 404
 
+# ... existing code ...
+
+# Admin Configuration
+ADMIN_ID = os.getenv("ADMIN_ID", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        admin_id = request.form.get('admin_id')
+        password = request.form.get('password')
+        
+        if admin_id == ADMIN_ID and password == ADMIN_PASSWORD:
+            session['is_admin'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('admin_login.html', error="Invalid credentials")
+    
+    return render_template('admin_login.html')
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    return render_template('admin_dashboard.html')
+
+@app.route('/api/admin/stats')
+def admin_stats():
+    if not session.get('is_admin'):
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    stats = {
+        "collections": mongo.db.list_collection_names(),
+        "counts": {}
+    }
+    for col in stats['collections']:
+        stats['counts'][col] = mongo.db[col].count_documents({})
+    
+    return jsonify(stats)
+
+@app.route('/api/admin/data/<collection_name>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def admin_data(collection_name):
+    if not session.get('is_admin'):
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    col = mongo.db[collection_name]
+    
+    if request.method == 'GET':
+        data = list(col.find().limit(100)) # Limit to prevent overload
+        for item in data:
+            item['_id'] = str(item['_id'])
+        return jsonify(data)
+    
+    elif request.method == 'POST':
+        try:
+            new_data = request.json
+            result = col.insert_one(new_data)
+            return jsonify({"status": "success", "id": str(result.inserted_id)}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    elif request.method == 'PUT': # Update
+        # Simplified update logic: assume _id is passed
+        try:
+            update_data = request.json
+            doc_id = update_data.pop('_id', None)
+            if not doc_id:
+                return jsonify({"error": "Document ID required"}), 400
+            
+            from bson.objectid import ObjectId
+            result = col.update_one({"_id": ObjectId(doc_id)}, {"$set": update_data})
+            return jsonify({"status": "success", "modified": result.modified_count})
+        except Exception as e:
+             return jsonify({"error": str(e)}), 400
+
+    elif request.method == 'DELETE':
+        try:
+            doc_id = request.args.get('id')
+            if not doc_id:
+                return jsonify({"error": "Document ID required"}), 400
+            
+            from bson.objectid import ObjectId
+            result = col.delete_one({"_id": ObjectId(doc_id)})
+            return jsonify({"status": "success", "deleted": result.deleted_count})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+@app.route('/api/admin/upload/<collection_name>', methods=['POST'])
+def admin_upload(collection_name):
+    if not session.get('is_admin'):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    if file:
+        import csv
+        import io
+        
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.DictReader(stream)
+        
+        documents = []
+        for row in csv_input:
+            documents.append(row)
+        
+        if documents:
+            try:
+                result = mongo.db[collection_name].insert_many(documents)
+                return jsonify({"status": "success", "count": len(result.inserted_ids)})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+        
+        return jsonify({"status": "success", "count": 0})
+
 if __name__ == '__main__':
     app.run(debug=True)
